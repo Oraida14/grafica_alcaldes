@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, send_from_directory
 from flask_socketio import SocketIO
 import pandas as pd
 from sqlalchemy import create_engine
@@ -17,15 +17,14 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Ruta local de tu repositorio
-REPO_PATH = "C:/Users/mafierro/3D Objects/grafica_alcaldes"  # 👈 ajusta a tu ruta local
-CSV_PATH = os.path.join(REPO_PATH, "tanque_alcaldes.csv")
+REPO_PATH = "C:/Users/mafierro/3D Objects/grafica_alcaldes"
+CSV_PATH = os.path.join(REPO_PATH, "static", "tanque_alcaldes.csv")
 REPORTE_PATH = os.path.join(REPO_PATH, "reporte_tanque.json")
 
 def build_query():
     # Definir fecha y hora de inicio y fin
     fecha_inicio = '2025-09-02 12:00:00'
-    fecha_fin = '2025-09-03 12:00:00'  # puedes actualizar dinámicamente si quieres que siempre sea "12:00 del día siguiente"
-
+    fecha_fin = '2025-09-03 12:00:00'
     query = f"""
         SELECT Nivel_1, t_stamp
         FROM datos.tanque_alcaldes
@@ -34,40 +33,28 @@ def build_query():
     """
     return query
 
-
 def push_to_github(repo_path, file_path):
     try:
         repo = git.Repo(repo_path)
         repo.git.add(file_path)
-
         commit_message = f"Update {os.path.basename(file_path)} {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         repo.index.commit(commit_message)
-
         origin = repo.remote(name='origin')
         origin.push()
         logging.info(f"{file_path} subido a GitHub exitosamente ✅")
-
     except Exception as e:
         logging.error(f"Error al subir a GitHub: {e}")
 
 def analizar_comportamiento(df):
-    """
-    Analiza comportamiento día/noche del tanque Alcaldes
-    desde el primer día del mes actual hasta hoy.
-    """
     NIVEL_MAX = 3.0  # metros
     CAPACIDAD = 5000  # m3
-
     df['t_stamp'] = pd.to_datetime(df['t_stamp'])
-
     # Filtrar solo desde el primer día del mes actual
     now = datetime.now()
     fecha_inicio = pd.Timestamp(year=now.year, month=now.month, day=1)
     df = df[df['t_stamp'] >= fecha_inicio]
-
     # Agregar columna de hora
     df['hora'] = df['t_stamp'].dt.hour
-
     # Separar en día y noche
     dia = df[(df['hora'] >= 6) & (df['hora'] < 16)]
     noche = df[(df['hora'] >= 16) | (df['hora'] < 6)]
@@ -80,13 +67,10 @@ def analizar_comportamiento(df):
         volumen_inicio = (tirante_inicio / NIVEL_MAX) * CAPACIDAD
         volumen_fin = (tirante_fin / NIVEL_MAX) * CAPACIDAD
         volumen_rebombeado = max(volumen_fin - volumen_inicio, 0)
-
         # Estimación de horas de operación
         delta_t = df['t_stamp'].diff().median().seconds / 3600 if len(df) > 1 else 1
         horas_operacion = ((subset['Nivel_1'].diff() > 0).sum()) * delta_t
-
         gasto_promedio = (volumen_rebombeado * 1000) / (horas_operacion * 3600) if horas_operacion > 0 else 0
-
         return {
             "tirante_inicio": round(tirante_inicio, 2),
             "tirante_fin": round(tirante_fin, 2),
@@ -102,7 +86,6 @@ def analizar_comportamiento(df):
         "noche": calcular_metricas(noche)
     }
 
-
 def extract_and_update_data():
     db_connection = None
     try:
@@ -110,40 +93,32 @@ def extract_and_update_data():
         db_connection_str = 'mysql+pymysql://admin:Password0@192.168.103.2/datos'
         db_connection = create_engine(db_connection_str)
         logging.info("Conexión a la base de datos exitosa.")
-
         logging.info("Extrayendo datos históricos para tanque_alcaldes...")
         query = build_query()
         df = pd.read_sql(query, con=db_connection)
-
         if df.empty:
             logging.warning("No se encontraron datos para tanque_alcaldes.")
             return
-
         df['nombre_sitio'] = 'tanque_alcaldes'
         df['t_stamp'] = pd.to_datetime(df['t_stamp'])
         df['fecha_hora'] = df['t_stamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
-
-        # Guardar CSV
+        # Guardar CSV en la carpeta static
         df.to_csv(CSV_PATH, index=False, encoding='utf-8-sig')
         logging.info(f"Historial guardado en {CSV_PATH}")
-
         # Analizar comportamiento
         reporte = analizar_comportamiento(df)
         with open(REPORTE_PATH, "w", encoding="utf-8") as f:
             json.dump(reporte, f, indent=4, ensure_ascii=False)
         logging.info(f"Reporte guardado en {REPORTE_PATH}")
-
         # Subir ambos archivos a GitHub
         push_to_github(REPO_PATH, CSV_PATH)
         push_to_github(REPO_PATH, REPORTE_PATH)
-
         # Emitir datos y reporte al frontend
         last_data = df.sort_values('t_stamp').drop_duplicates(subset=['nombre_sitio'], keep='last')
         socketio.emit('update_data', {
             "ultimos_datos": last_data.to_dict(orient='records'),
             "reporte": reporte
         })
-
     except Exception as e:
         logging.error(f"Ocurrió un error: {e}")
     finally:
@@ -166,23 +141,16 @@ def get_reporte():
         reporte = json.load(f)
     return jsonify(reporte)
 
-def periodic_data_update(interval):
-    while True:
-        extract_and_update_data()
-        time.sleep(interval)
-
 @app.route('/analisis')
 def analisis():
     return render_template('analisis.html')
 
 @app.route('/api/analisis')
 def get_analisis():
-    analisis_path = os.path.join(REPO_PATH, "tanque_alcaldes.csv")
-    data = pd.read_csv(analisis_path)
+    data = pd.read_csv(CSV_PATH)
     return jsonify(data.to_dict(orient='records'))
-
 
 if __name__ == "__main__":
     interval = 1800  # cada 30 min
-    threading.Thread(target=periodic_data_update, args=(interval,), daemon=True).start()
+    threading.Thread(target=extract_and_update_data, args=(), daemon=True).start()
     socketio.run(app, debug=True)

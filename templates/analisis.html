@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard  Tanque Alcaldes</title>
+  <title>Dashboard Tanque Alcaldes</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
@@ -58,7 +58,6 @@
 </head>
 <body>
   <h1 class="text-center mb-4">Análisis Ejecutivo - Tanque Alcaldes</h1>
-
   <div class="metrics-container">
     <div class="metric-card">
       <div class="card">
@@ -97,126 +96,125 @@
       </div>
     </div>
   </div>
-
   <div class="card">
     <h4 class="text-center">Histórico Nivel del Tanque (30 días)</h4>
     <div class="chart-container">
       <canvas id="nivelChart"></canvas>
     </div>
   </div>
-
   <div class="card">
     <h4 class="text-center">Análisis Diario y Nocturno</h4>
     <div class="analysis-description" id="descripcion">
       <p>El gráfico muestra la evolución del nivel del tanque Alcaldes. Las métricas resumen el comportamiento de los últimos 30 días.</p>
     </div>
   </div>
-
   <script>
     async function fetchData() {
-      // Cargar datos desde el archivo CSV
-      Papa.parse('tanque_alcaldes.csv', {
-        download: true,
-        header: true,
-        dynamicTyping: true,
-        complete: function(results) {
-          const data = results.data;
+      // Cargar datos desde la API
+      const response = await fetch('/api/data');
+      const data = await response.json();
 
-          // Calcular estadísticas
-          const niveles = data.map(d => d.Nivel_1);
-          const promedio = niveles.reduce((a, b) => a + b, 0) / niveles.length;
-          const sorted = [...niveles].sort((a, b) => a - b);
-          const mediana = sorted.length % 2 ? sorted[Math.floor(sorted.length / 2)] : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2;
-          const desviacion = Math.sqrt(niveles.reduce((sq, n) => sq + Math.pow(n - promedio, 2), 0) / niveles.length);
-          const nivelMaximo = Math.max(...niveles);
-          const nivelMinimo = Math.min(...niveles);
-          const tendencia = niveles[niveles.length - 1] > niveles[0] ? "Aumentando" : "Disminuyendo";
+      // Cargar reporte desde la API
+      const reporteResponse = await fetch('/api/reporte');
+      const reporte = await reporteResponse.json();
 
-          // Mostrar métricas
-          document.getElementById('promedio').textContent = promedio.toFixed(2);
-          document.getElementById('mediana').textContent = mediana.toFixed(2);
-          document.getElementById('desviacion').textContent = desviacion.toFixed(2);
-          document.getElementById('nivelMaximo').textContent = nivelMaximo.toFixed(2);
-          document.getElementById('nivelMinimo').textContent = nivelMinimo.toFixed(2);
-          document.getElementById('tendencia').textContent = tendencia;
+      // Calcular estadísticas
+      const niveles = data.map(d => d.Nivel_1);
+      const promedio = niveles.reduce((a, b) => a + b, 0) / niveles.length;
+      const sorted = [...niveles].sort((a, b) => a - b);
+      const mediana = sorted.length % 2 ? sorted[Math.floor(sorted.length / 2)] : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2;
+      const desviacion = Math.sqrt(niveles.reduce((sq, n) => sq + Math.pow(n - promedio, 2), 0) / niveles.length);
+      const nivelMaximo = Math.max(...niveles);
+      const nivelMinimo = Math.min(...niveles);
+      const tendencia = niveles[niveles.length - 1] > niveles[0] ? "Aumentando" : "Disminuyendo";
 
-          // Crear gráfico
-          const ctx = document.getElementById('nivelChart').getContext('2d');
-          new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: data.map(d => d.fecha_hora),
-              datasets: [{
-                label: 'Nivel (m)',
-                data: niveles,
-                borderColor: 'rgba(52, 152, 219, 1)',
-                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.3,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-              }]
+      // Mostrar métricas
+      document.getElementById('promedio').textContent = promedio.toFixed(2);
+      document.getElementById('mediana').textContent = mediana.toFixed(2);
+      document.getElementById('desviacion').textContent = desviacion.toFixed(2);
+      document.getElementById('nivelMaximo').textContent = nivelMaximo.toFixed(2);
+      document.getElementById('nivelMinimo').textContent = nivelMinimo.toFixed(2);
+      document.getElementById('tendencia').textContent = tendencia;
+
+      // Crear gráfico
+      const ctx = document.getElementById('nivelChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map(d => d.fecha_hora),
+          datasets: [{
+            label: 'Nivel (m)',
+            data: niveles,
+            borderColor: 'rgba(52, 152, 219, 1)',
+            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
+          },
+          plugins: {
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleColor: '#ecf0f1',
+              bodyColor: '#ecf0f1',
+              padding: 10,
+              displayColors: false,
             },
-            options: {
-              responsive: true,
-              interaction: {
-                mode: 'nearest',
-                axis: 'x',
-                intersect: false
-              },
-              plugins: {
-                tooltip: {
-                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                  titleColor: '#ecf0f1',
-                  bodyColor: '#ecf0f1',
-                  padding: 10,
-                  displayColors: false,
-                },
-                title: {
-                  display: true,
-                  text: 'Nivel del Tanque Alcaldes - Últimos 30 días',
-                  color: '#ecf0f1',
-                  font: {
-                    size: 16
-                  }
-                }
-              },
-              scales: {
-                x: {
-                  display: true,
-                  title: {
-                    display: true,
-                    text: 'Fecha/Hora',
-                    color: '#ecf0f1'
-                  },
-                  ticks: {
-                    color: '#bdc3c7'
-                  }
-                },
-                y: {
-                  display: true,
-                  title: {
-                    display: true,
-                    text: 'Nivel (m)',
-                    color: '#ecf0f1'
-                  },
-                  ticks: {
-                    color: '#bdc3c7',
-                    beginAtZero: false
-                  }
-                }
+            title: {
+              display: true,
+              text: 'Nivel del Tanque Alcaldes - Últimos 30 días',
+              color: '#ecf0f1',
+              font: {
+                size: 16
               }
             }
-          });
-
-          // Descripción dinámica basada en el reporte
-          document.getElementById('descripcion').innerHTML = `
-            <p>El nivel del tanque ha variado entre <strong>${nivelMinimo.toFixed(2)} m</strong> y <strong>${nivelMaximo.toFixed(2)} m</strong> en los últimos 30 días.</p>
-            <p>El nivel promedio es de <strong>${promedio.toFixed(2)} m</strong>.</p>
-          `;
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Fecha/Hora',
+                color: '#ecf0f1'
+              },
+              ticks: {
+                color: '#bdc3c7'
+              }
+            },
+            y: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Nivel (m)',
+                color: '#ecf0f1'
+              },
+              ticks: {
+                color: '#bdc3c7',
+                beginAtZero: false
+              }
+            }
+          }
         }
       });
+
+      // Descripción dinámica basada en el reporte
+      const dia = reporte.dia;
+      const noche = reporte.noche;
+      document.getElementById('descripcion').innerHTML = `
+        <p>Durante el día, el nivel inició en <strong>${dia.tirante_inicio} m</strong> y terminó en <strong>${dia.tirante_fin} m</strong>,
+        con un volumen rebombeado de <strong>${dia.volumen_rebombeado} m³</strong> y un gasto promedio de <strong>${dia.gasto_lps} L/s</strong>.</p>
+        <p>Durante la noche, el nivel inició en <strong>${noche.tirante_inicio} m</strong> y terminó en <strong>${noche.tirante_fin} m</strong>,
+        con un volumen rebombeado de <strong>${noche.volumen_rebombeado} m³</strong> y un gasto promedio de <strong>${noche.gasto_lps} L/s</strong>.</p>
+      `;
     }
 
     fetchData();
