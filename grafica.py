@@ -39,21 +39,13 @@ def push_to_github(repo_path, file_path):
 
         # Verificar si hay cambios sin confirmar
         if repo.is_dirty():
-            logging.info("Hay cambios sin confirmar. Confirmando cambios antes de hacer pull...")
+            logging.info("Hay cambios sin confirmar. Confirmando cambios antes de hacer push...")
             repo.git.add('--all')
-            commit_message = f"Auto-commit before pull: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            commit_message = f"Auto-commit before push: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
             repo.index.commit(commit_message)
 
-        # Hacer pull con rebase
+        # Hacer push directamente sin pull
         origin = repo.remote(name='origin')
-        origin.pull(rebase=True)
-
-        # Añadir y confirmar el archivo específico
-        repo.git.add(file_path)
-        commit_message = f"Update {os.path.basename(file_path)} {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-        repo.index.commit(commit_message)
-
-        # Hacer push
         origin.push()
         logging.info(f"{file_path} subido a GitHub exitosamente ✅")
 
@@ -62,6 +54,7 @@ def push_to_github(repo_path, file_path):
         logging.error("Asegúrate de que no haya conflictos y de que tengas permisos para hacer push.")
     except Exception as e:
         logging.error(f"Error inesperado al subir a GitHub: {e}")
+
 
 
 def analizar_comportamiento(df):
