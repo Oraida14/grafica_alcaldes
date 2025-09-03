@@ -1,3 +1,151 @@
+📝 INSTRUCCIONES DE USO DE GIT – PROYECTO GRAFICA_ALCALDES
+1️⃣ Abrir Git Bash y moverse al proyecto
+# Navega a la carpeta donde está tu proyecto
+cd "/c/Users/mafierro/3D Objects/grafica_alcaldes"
+
+2️⃣ Verificar estado del repositorio
+git status
+
+
+🔹 Esto te mostrará:
+
+Archivos modificados
+
+Archivos no rastreados
+
+Rama actual y si está al día con GitHub
+
+3️⃣ Agregar archivos al área de staging
+
+Agregar todos los cambios:
+
+git add .
+
+
+Agregar archivos específicos:
+
+git add reporte_tanque.json
+git add templates/mapa.html
+
+
+💡 Tip: Siempre revisa con git status antes de agregar.
+
+4️⃣ Hacer commit con mensaje descriptivo
+git commit -m "Actualización: registro de datos y reporte diario tanque_alcaldes"
+
+
+✅ Ejemplos de mensajes claros:
+
+"Actualización del CSV tanque_alcaldes_historial_30dias.csv"
+
+"Corrección en grafica.py para análisis de volumen y tirante"
+
+5️⃣ Subir cambios a GitHub
+git push origin master
+
+
+⚠️ Nota: Si tu repositorio principal es main, reemplaza master por main.
+
+6️⃣ Traer cambios desde GitHub antes de empezar a trabajar
+git pull origin master
+
+
+💡 Útil si otros también trabajan en el repo.
+
+7️⃣ Ver historial de commits
+git log --oneline
+
+
+🔹 Verás una lista resumida de commits recientes con su ID y mensaje.
+
+8️⃣ Ver diferencias antes de hacer commit
+git diff
+
+
+🔹 Muestra los cambios línea por línea.
+
+9️⃣ Restaurar un archivo al último estado confirmado
+git restore nombre_archivo
+
+
+💡 Esto deshace cambios locales que no quieres subir.
+
+🔟 Buenas prácticas
+
+Hacer commits frecuentes y descriptivos.
+
+Mantener actualizado el CSV y JSON (tanque_alcaldes_historial_30dias.csv y reporte_tanque.json).
+
+Para nuevas funcionalidades, crea ramas:
+
+git checkout -b nombre_rama
+
+
+Antes de subir, revisa siempre git status y git diff.
+
+
+
+
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+# Instrucciones detalladas para trabajar con Git en el proyecto grafica_alcaldes
+
+## 1. Abrir Git Bash y navegar a tu proyecto
+cd "/c/Users/mafierro/3D Objects/grafica_alcaldes"
+
+## 2. Ver el estado actual del repositorio
+git status
+# Te mostrará los archivos modificados, no rastreados y la rama actual
+
+## 3. Agregar archivos al área de staging
+# Para agregar TODOS los cambios (modificados y nuevos)
+git add .
+
+# Si quieres agregar solo un archivo específico
+git add reporte_tanque.json
+git add templates/mapa.html
+
+## 4. Hacer commit con mensaje descriptivo
+git commit -m "Actualización: registro de datos y reporte diario tanque_alcaldes"
+
+# Ejemplos de commits:
+# "Actualización de tanque_alcaldes_historial_30dias.csv con últimos datos"
+# "Corrección en grafica.py para análisis de volumen y tirante"
+
+## 5. Subir los cambios a GitHub
+git push origin master
+
+# Nota: Si es la primera vez o si cambias de rama principal, reemplaza 'master' por 'main' si tu repositorio tiene main.
+
+## 6. Traer cambios desde GitHub antes de empezar a trabajar (opcional, si hay colaboradores)
+git pull origin master
+
+## 7. Ver historial de commits
+git log --oneline
+# Te muestra una lista resumida de commits recientes
+
+## 8. Ver diferencias antes de hacer commit
+git diff
+# Muestra los cambios línea por línea
+
+## 9. Restaurar un archivo al último estado confirmado (deshacer cambios locales)
+git restore nombre_archivo
+
+## 10. Recomendaciones
+- Siempre hacer `git status` antes de commit para revisar cambios.
+- Hacer commits frecuentes y descriptivos.
+- Mantener actualizado el CSV `tanque_alcaldes_historial_30dias.csv` y el JSON `reporte_tanque.json`.
+- Para nuevas funcionalidades, puedes crear ramas:
+  git checkout -b nombre_rama
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
 # 📌 PASOS BÁSICOS PARA USAR GIT Y GITHUB
 
 1. Abre Git Bash en la carpeta de tu proyecto:

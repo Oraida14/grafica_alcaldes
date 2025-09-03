@@ -18,16 +18,22 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # Ruta local de tu repositorio
 REPO_PATH = "C:/Users/mafierro/3D Objects/grafica_alcaldes"  # 👈 ajusta a tu ruta local
-CSV_PATH = os.path.join(REPO_PATH, "tanque_alcaldes_historial_30dias.csv")
+CSV_PATH = os.path.join(REPO_PATH, "tanque_alcaldes.csv")
 REPORTE_PATH = os.path.join(REPO_PATH, "reporte_tanque.json")
 
 def build_query():
-    return """
+    # Definir fecha y hora de inicio y fin
+    fecha_inicio = '2025-09-02 12:00:00'
+    fecha_fin = '2025-09-03 12:00:00'  # puedes actualizar dinámicamente si quieres que siempre sea "12:00 del día siguiente"
+
+    query = f"""
         SELECT Nivel_1, t_stamp
         FROM datos.tanque_alcaldes
-        WHERE t_stamp >= NOW() - INTERVAL 30 DAY
+        WHERE t_stamp >= '{fecha_inicio}' AND t_stamp <= '{fecha_fin}'
         ORDER BY t_stamp ASC;
     """
+    return query
+
 
 def push_to_github(repo_path, file_path):
     try:
@@ -47,13 +53,22 @@ def push_to_github(repo_path, file_path):
 def analizar_comportamiento(df):
     """
     Analiza comportamiento día/noche del tanque Alcaldes
+    desde el primer día del mes actual hasta hoy.
     """
     NIVEL_MAX = 3.0  # metros
     CAPACIDAD = 5000  # m3
 
     df['t_stamp'] = pd.to_datetime(df['t_stamp'])
+
+    # Filtrar solo desde el primer día del mes actual
+    now = datetime.now()
+    fecha_inicio = pd.Timestamp(year=now.year, month=now.month, day=1)
+    df = df[df['t_stamp'] >= fecha_inicio]
+
+    # Agregar columna de hora
     df['hora'] = df['t_stamp'].dt.hour
 
+    # Separar en día y noche
     dia = df[(df['hora'] >= 6) & (df['hora'] < 16)]
     noche = df[(df['hora'] >= 16) | (df['hora'] < 6)]
 
@@ -86,6 +101,7 @@ def analizar_comportamiento(df):
         "dia": calcular_metricas(dia),
         "noche": calcular_metricas(noche)
     }
+
 
 def extract_and_update_data():
     db_connection = None
@@ -154,6 +170,17 @@ def periodic_data_update(interval):
     while True:
         extract_and_update_data()
         time.sleep(interval)
+
+@app.route('/analisis')
+def analisis():
+    return render_template('analisis.html')
+
+@app.route('/api/analisis')
+def get_analisis():
+    analisis_path = os.path.join(REPO_PATH, "tanque_alcaldes.csv")
+    data = pd.read_csv(analisis_path)
+    return jsonify(data.to_dict(orient='records'))
+
 
 if __name__ == "__main__":
     interval = 1800  # cada 30 min
