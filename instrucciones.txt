@@ -1,0 +1,56 @@
+# 📌 PASOS BÁSICOS PARA USAR GIT Y GITHUB
+
+1. Abre Git Bash en la carpeta de tu proyecto:
+   - Clic derecho en la carpeta → "Git Bash Here"
+
+2. Configura tu usuario (solo la primera vez en tu compu):
+   git config --global user.name "TuNombre"
+   git config --global user.email "tuemail@example.com"
+
+3. Inicializa el repositorio (solo la primera vez en ese proyecto):
+   git init
+
+4. Conecta tu proyecto a GitHub (solo la primera vez):
+   git remote add origin https://github.com/USUARIO/REPO.git
+
+5. Revisa el estado de tus archivos:
+   git status
+
+6. Agrega los cambios que quieras guardar:
+   git add .
+
+7. Crea un commit (guarda un punto en la historia):
+   git commit -m "Descripción de los cambios"
+
+8. Sube los cambios a GitHub:
+   git push origin main
+   (si tu rama se llama master → usa `master` en lugar de `main`)
+
+# 🚀 PASOS CUANDO YA TIENES EL REPO INICIADO
+
+1. Abre Git Bash en la carpeta del proyecto
+2. Verifica si hay cambios nuevos en GitHub antes de trabajar:
+   git pull origin main
+
+3. Haz tus modificaciones en el código
+4. Guarda los cambios con:
+   git add .
+   git commit -m "mensaje"
+   git push origin main
+
+# 🛠️ COMANDOS ÚTILES
+
+- Ver el historial de commits:
+  git log --oneline
+
+- Cambiar a otra rama:
+  git checkout nombre_rama
+
+- Crear nueva rama:
+  git checkout -b nombre_rama
+
+- Volver al estado del último commit (descartar cambios):
+  git checkout -- archivo
+
+- Clonar un repositorio existente:
+  git clone https://github.com/USUARIO/REPO.git
