@@ -8,7 +8,7 @@ import threading
 import time
 import git
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -22,9 +22,9 @@ CSV_PATH = os.path.join(REPO_PATH, "static", "tanque_alcaldes.csv")
 REPORTE_PATH = os.path.join(REPO_PATH, "reporte_tanque.json")
 
 def build_query():
-    # Definir fecha y hora de inicio y fin
-    fecha_inicio = '2025-09-02 12:00:00'
-    fecha_fin = '2025-09-03 12:00:00'
+    # Obtener datos de las últimas 24 horas
+    fecha_fin = datetime.now()
+    fecha_inicio = fecha_fin - timedelta(days=1)
     query = f"""
         SELECT Nivel_1, t_stamp
         FROM datos.tanque_alcaldes
@@ -36,14 +36,33 @@ def build_query():
 def push_to_github(repo_path, file_path):
     try:
         repo = git.Repo(repo_path)
+
+        # Verificar si hay cambios sin confirmar
+        if repo.is_dirty():
+            logging.info("Hay cambios sin confirmar. Confirmando cambios antes de hacer pull...")
+            repo.git.add('--all')
+            commit_message = f"Auto-commit before pull: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            repo.index.commit(commit_message)
+
+        # Hacer pull con rebase
+        origin = repo.remote(name='origin')
+        origin.pull(rebase=True)
+
+        # Añadir y confirmar el archivo específico
         repo.git.add(file_path)
         commit_message = f"Update {os.path.basename(file_path)} {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         repo.index.commit(commit_message)
-        origin = repo.remote(name='origin')
+
+        # Hacer push
         origin.push()
         logging.info(f"{file_path} subido a GitHub exitosamente ✅")
-    except Exception as e:
+
+    except git.exc.GitCommandError as e:
         logging.error(f"Error al subir a GitHub: {e}")
+        logging.error("Asegúrate de que no haya conflictos y de que tengas permisos para hacer push.")
+    except Exception as e:
+        logging.error(f"Error inesperado al subir a GitHub: {e}")
+
 
 def analizar_comportamiento(df):
     NIVEL_MAX = 3.0  # metros
