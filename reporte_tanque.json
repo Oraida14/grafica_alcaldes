@@ -1,20 +1,20 @@
 {
     "dia": {
         "tirante_inicio": 3.4,
-        "tirante_fin": 2.12,
+        "tirante_fin": 2.25,
         "volumen_inicio": 5667.0,
-        "volumen_fin": 3531.0,
+        "volumen_fin": 3744.0,
         "volumen_rebombeado": 0,
-        "horas_operacion": 1.8,
+        "horas_operacion": 1.7,
         "gasto_lps": 0.0
     },
     "noche": {
-        "tirante_inicio": 3.4,
+        "tirante_inicio": 1.75,
         "tirante_fin": 2.87,
-        "volumen_inicio": 5667.0,
+        "volumen_inicio": 2910.0,
         "volumen_fin": 4780.0,
-        "volumen_rebombeado": 0,
+        "volumen_rebombeado": 1870.0,
         "horas_operacion": 10.6,
-        "gasto_lps": 0.0
+        "gasto_lps": 49.0
     }
 }
