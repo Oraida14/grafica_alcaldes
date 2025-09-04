@@ -10,13 +10,13 @@
         "alertas": []
     },
     "noche": {
-        "tirante_inicio": 1.96,
-        "tirante_fin": 2.01,
-        "volumen_inicio": 3261.0,
-        "volumen_fin": 3357.0,
-        "volumen_rebombeado": 96.0,
+        "tirante_inicio": 2.03,
+        "tirante_fin": 2.1,
+        "volumen_inicio": 3382.0,
+        "volumen_fin": 3505.0,
+        "volumen_rebombeado": 123.0,
         "horas_operacion": 10.4,
-        "gasto_lps": 2.6,
+        "gasto_lps": 3.3,
         "alertas": [
             "Cambios significativos en la noche: 13 eventos"
         ]
