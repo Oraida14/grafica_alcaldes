@@ -63,28 +63,41 @@ def analizar_comportamiento(df):
     NIVEL_MAX = 3.0  # metros
     CAPACIDAD = 5000  # m3
     df['t_stamp'] = pd.to_datetime(df['t_stamp'])
+
     # Filtrar solo desde el primer día del mes actual
     now = datetime.now()
     fecha_inicio = pd.Timestamp(year=now.year, month=now.month, day=1)
     df = df[df['t_stamp'] >= fecha_inicio]
+
     # Agregar columna de hora
     df['hora'] = df['t_stamp'].dt.hour
+
     # Separar en día y noche
     dia = df[(df['hora'] >= 6) & (df['hora'] < 16)]
     noche = df[(df['hora'] >= 16) | (df['hora'] < 6)]
 
-    def calcular_metricas(subset):
+    def calcular_metricas(subset, es_noche=False):
         if subset.empty:
             return {}
+
         tirante_inicio = subset.iloc[0]['Nivel_1']
         tirante_fin = subset.iloc[-1]['Nivel_1']
         volumen_inicio = (tirante_inicio / NIVEL_MAX) * CAPACIDAD
         volumen_fin = (tirante_fin / NIVEL_MAX) * CAPACIDAD
         volumen_rebombeado = max(volumen_fin - volumen_inicio, 0)
+
         # Estimación de horas de operación
         delta_t = df['t_stamp'].diff().median().seconds / 3600 if len(df) > 1 else 1
         horas_operacion = ((subset['Nivel_1'].diff() > 0).sum()) * delta_t
         gasto_promedio = (volumen_rebombeado * 1000) / (horas_operacion * 3600) if horas_operacion > 0 else 0
+
+        # Análisis de seguridad
+        alertas = []
+        if es_noche:
+            cambios_significativos = subset[subset['Nivel_1'].diff().abs() > 0.1]  # Cambios mayores a 0.1 metros
+            if not cambios_significativos.empty:
+                alertas.append(f"Cambios significativos en la noche: {len(cambios_significativos)} eventos")
+
         return {
             "tirante_inicio": round(tirante_inicio, 2),
             "tirante_fin": round(tirante_fin, 2),
@@ -92,12 +105,13 @@ def analizar_comportamiento(df):
             "volumen_fin": round(volumen_fin, 0),
             "volumen_rebombeado": round(volumen_rebombeado, 0),
             "horas_operacion": round(horas_operacion, 1),
-            "gasto_lps": round(gasto_promedio, 1)
+            "gasto_lps": round(gasto_promedio, 1),
+            "alertas": alertas
         }
 
     return {
         "dia": calcular_metricas(dia),
-        "noche": calcular_metricas(noche)
+        "noche": calcular_metricas(noche, es_noche=True)
     }
 
 def extract_and_update_data():
@@ -142,27 +156,28 @@ def extract_and_update_data():
 
 @app.route('/')
 def index():
-    return render_template('mapa.html')
+    return render_template('index.html')  # Cambiado de 'mapa.html' a 'alcaldes.html'
 
-@app.route('/api/data')
-def get_data():
-    data = pd.read_csv(CSV_PATH)
-    return jsonify(data.to_dict(orient='records'))
+@app.route('/seguridad')
+def seguridad():
+    return render_template('seguridad.html')
 
-@app.route('/api/reporte')
-def get_reporte():
-    with open(REPORTE_PATH, "r", encoding="utf-8") as f:
-        reporte = json.load(f)
-    return jsonify(reporte)
+@app.route('/reporte')
+def reporte():
+    return render_template('reporte.html')
 
 @app.route('/analisis')
 def analisis():
     return render_template('analisis.html')
 
-@app.route('/api/analisis')
-def get_analisis():
-    data = pd.read_csv(CSV_PATH)
-    return jsonify(data.to_dict(orient='records'))
+@app.route('/detalle-alertas')
+def detalle_alertas():
+    return render_template('detalle_alertas.html')
+
+
+
+
+
 
 if __name__ == "__main__":
     interval = 1800  # cada 30 min
