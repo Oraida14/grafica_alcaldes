@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Análisis de Comportamiento - Tanque Alcaldes</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f7f9fb;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .chart-container {
+      width: 90%;
+      margin: auto;
+      margin-bottom: 50px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📊 Análisis de Comportamiento - Tanque Alcaldes</h1>
+
+  <!-- Gráfico 1: Nivel del tanque -->
+  <div class="chart-container">
+    <canvas id="nivelChart"></canvas>
+  </div>
+
+  <!-- Gráfico 2: Volumen Día vs Noche -->
+  <div class="chart-container">
+    <canvas id="volumenChart"></canvas>
+  </div>
+
+  <script>
+    async function cargarDatos() {
+      const resp = await fetch("/api/analisis");
+      const data = await resp.json();
+
+      // Preparamos datos
+      const fechas = data.map(d => d.fecha + " (" + d.periodo + ")");
+      const tiranteInicio = data.map(d => d.tirante_inicio);
+      const tiranteFin = data.map(d => d.tirante_fin);
+      const volumenRebombeado = data.map(d => d.volumen_rebombeado_m3);
+
+      // Gráfico de tirante (líneas)
+      const ctx1 = document.getElementById("nivelChart").getContext("2d");
+      new Chart(ctx1, {
+        type: "line",
+        data: {
+          labels: fechas,
+          datasets: [
+            {
+              label: "Tirante Inicio (m)",
+              data: tiranteInicio,
+              borderColor: "blue",
+              fill: false
+            },
+            {
+              label: "Tirante Fin (m)",
+              data: tiranteFin,
+              borderColor: "green",
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { title: { display: true, text: "Evolución del Nivel del Tanque" } },
+          scales: { y: { title: { display: true, text: "Metros" } } }
+        }
+      });
+
+      // Gráfico Día vs Noche (barras de volumen)
+      const ctx2 = document.getElementById("volumenChart").getContext("2d");
+      new Chart(ctx2, {
+        type: "bar",
+        data: {
+          labels: fechas,
+          datasets: [
+            {
+              label: "Volumen Rebombeado (m³)",
+              data: volumenRebombeado,
+              backgroundColor: data.map(d => d.periodo === "Día" ? "orange" : "purple")
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { title: { display: true, text: "Comparativa Volumen Día vs Noche" } },
+          scales: { y: { title: { display: true, text: "m³" } } }
+        }
+      });
+    }
+
+    cargarDatos();
+  </script>
+</body>
+</html>
