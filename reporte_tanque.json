@@ -17,6 +17,8 @@
         "volumen_rebombeado": 1995.0,
         "horas_operacion": 10.8,
         "gasto_lps": 51.3,
-        "alertas": []
+        "alertas": [
+            "Cambios significativos en la noche: 18 eventos"
+        ]
     }
 }
