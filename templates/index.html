@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Tanque Alcaldes</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+  <style>
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+    }
+    .card {
+      width: 100%;
+      background: linear-gradient(145deg, #2c3e50, #34495e);
+      border-radius: 15px;
+      margin-bottom: 20px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(5, 203, 218, 0.815);
+      transition: transform 0.3s, box-shadow 0.3s;
+      box-sizing: border-box;
+    }
+    .metric-value {
+      color: #3498db;
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 20px rgba(11, 220, 235, 0.5);
+    }
+    .chart-container {
+      width: 100%;
+      height: 400px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 10px;
+      margin-bottom: 20px;
+      box-sizing: border-box;
+    }
+    .chart-container canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .analysis-description {
+      background-color: rgba(224, 213, 213, 0.1);
+      color: #e0e0e0;
+      padding: 15px;
+      border-radius: 10px;
+      border-left: 4px solid #3498db;
+    }
+    h1, h4, h5 {
+      color: #ecf0f1;
+    }
+    .metrics-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .metric-card {
+      flex: 1;
+      min-width: 200px;
+      margin: 10px;
+    }
+    .navbar {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+<!-- 🔹 Navbar corregido -->
+<!-- 🔹 Navbar corregido -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="index.html">Tanque Alcaldes</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="index.html">Análisis General</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="reporte.html">Reporte</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="seguridad.html">Seguridad</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://oraida14.github.io/grafica_alcaldes/trabajando.html">Análisis</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://oraida14.github.io/grafica_alcaldes/trabajando.html">Detalle Alertas</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<script>
+  // 🔹 Resaltar pestaña activa según la URL
+  const currentPage = window.location.pathname.split("/").pop(); // obtiene index.html, reporte.html, etc.
+  const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+
+  navLinks.forEach(link => {
+    if (link.getAttribute('href') === currentPage) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
+  });
+</script>
+
+
+
+
+  <h1 class="text-center mb-4">Análisis - Tanque Alcaldes</h1>
+  <div class="metrics-container">
+  <div class="metric-card">
+    <div class="card">
+      <h5>Promedio</h5>
+      <p id="promedio" class="metric-value">--</p>
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="card">
+      <h5>Mediana</h5>
+      <p id="mediana" class="metric-value">--</p>
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="card">
+      <h5>Desviación Estándar</h5>
+      <p id="desviacion" class="metric-value">--</p>
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="card">
+      <h5>Nivel Máximo</h5>
+      <p id="nivelMaximo" class="metric-value">--</p>
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="card">
+      <h5>Nivel Mínimo</h5>
+      <p id="nivelMinimo" class="metric-value">--</p>
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="card">
+      <h5>Tendencia</h5>
+      <p id="tendencia" class="metric-value">--</p>
+    </div>
+  </div>
+</div>
+
+  <div class="card">
+    <h4 class="text-center">Histórico Nivel del Tanque (30 días)</h4>
+    <div class="chart-container">
+      <canvas id="nivelChart"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <h4 class="text-center">Análisis Diario y Nocturno</h4>
+    <div class="analysis-description" id="descripcion">
+      <p>El gráfico muestra la evolución del nivel del tanque Alcaldes. Las métricas resumen el comportamiento de los últimos 30 días.</p>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    async function fetchData() {
+      // Tu código JavaScript existente
+      // Cargar datos desde los archivos en GitHub
+      const csvUrl = 'https://raw.githubusercontent.com/Oraida14/grafica_alcaldes/master/static/tanque_alcaldes.csv';
+      const reporteUrl = 'https://raw.githubusercontent.com/Oraida14/grafica_alcaldes/master/reporte_tanque.json';
+
+      // Cargar datos CSV
+      const response = await fetch(csvUrl);
+      const csvText = await response.text();
+      const results = Papa.parse(csvText, {
+          header: true,
+          dynamicTyping: true,
+      });
+      const data = results.data;
+
+      // Filtrar los datos para ignorar los ceros que duran menos de una hora
+      let filteredData = [];
+      let zeroStartTime = null;
+      for (let i = 0; i < data.length; i++) {
+          if (data[i].Nivel_1 === 0) {
+              if (zeroStartTime === null) {
+                  zeroStartTime = new Date(data[i].fecha_hora);
+              }
+              // Si es el último dato, añadirlo si no supera una hora
+              if (i === data.length - 1 && zeroStartTime !== null) {
+                  let zeroEndTime = new Date(data[i].fecha_hora);
+                  let zeroDuration = (zeroEndTime - zeroStartTime) / (1000 * 60); // Duración en minutos
+                  if (zeroDuration <= 1) { // Si dura 1 minuto o menos, ignorar
+                      continue;
+                  }
+              }
+          } else {
+              if (zeroStartTime !== null) {
+                  let zeroEndTime = new Date(data[i - 1].fecha_hora);
+                  let zeroDuration = (zeroEndTime - zeroStartTime) / (1000 * 60); // Duración en minutos
+                  if (zeroDuration <= 60) { // Si dura 1 hora o menos, ignorar los ceros
+                      zeroStartTime = null;
+                      continue;
+                  }
+                  zeroStartTime = null;
+              }
+              filteredData.push(data[i]);
+          }
+      }
+
+      // Cargar reporte JSON
+      const reporteResponse = await fetch(reporteUrl);
+      const reporte = await reporteResponse.json();
+
+      // Calcular estadísticas con los datos filtrados
+      const niveles = filteredData.map(d => d.Nivel_1);
+      const fechas = filteredData.map(d => d.fecha_hora);
+      const promedio = niveles.reduce((a, b) => a + b, 0) / niveles.length;
+      const sorted = [...niveles].sort((a, b) => a - b);
+      const mediana = sorted.length % 2 ? sorted[Math.floor(sorted.length / 2)] : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2;
+      const desviacion = Math.sqrt(niveles.reduce((sq, n) => sq + Math.pow(n - promedio, 2), 0) / niveles.length);
+      const nivelMaximo = Math.max(...niveles);
+      const nivelMinimo = Math.min(...niveles);
+      const tendencia = niveles[niveles.length - 1] > niveles[0] ? "Aumentando" : "Disminuyendo";
+
+      // Mostrar métricas
+      document.getElementById('promedio').textContent = promedio.toFixed(2);
+      document.getElementById('mediana').textContent = mediana.toFixed(2);
+      document.getElementById('desviacion').textContent = desviacion.toFixed(2);
+      document.getElementById('nivelMaximo').textContent = nivelMaximo.toFixed(2);
+      document.getElementById('nivelMinimo').textContent = nivelMinimo.toFixed(2);
+      document.getElementById('tendencia').textContent = tendencia;
+
+      // Crear gráfico
+      const ctx = document.getElementById('nivelChart').getContext('2d');
+      // Asegúrate de que el contenedor del canvas tenga el tamaño correcto
+      document.getElementById('nivelChart').style.width = '100%';
+      document.getElementById('nivelChart').style.height = '100%';
+
+      new Chart(ctx, {
+          type: 'line',
+          data: {
+              labels: fechas,
+              datasets: [{
+                  label: 'Nivel (m)',
+                  data: niveles,
+                  borderColor: 'rgba(52, 152, 219, 1)',
+                  backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                  borderWidth: 3,
+                  fill: true,
+                  tension: 0.3,
+                  pointRadius: 0,
+                  pointHoverRadius: 0,
+              }]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: {
+                  mode: 'nearest',
+                  axis: 'x',
+                  intersect: false
+              },
+              plugins: {
+                  tooltip: {
+                      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                      titleColor: '#ecf0f1',
+                      bodyColor: '#ecf0f1',
+                      padding: 10,
+                      displayColors: false,
+                  },
+                  title: {
+                      display: true,
+                      text: 'Nivel del Tanque Alcaldes - Últimos 30 días',
+                      color: '#ecf0f1',
+                      font: {
+                          size: 16
+                      }
+                  }
+              },
+              scales: {
+                  x: {
+                      display: true,
+                      title: {
+                          display: true,
+                          text: 'Fecha/Hora',
+                          color: '#ecf0f1'
+                      },
+                      ticks: {
+                          color: '#bdc3c7'
+                      }
+                  },
+                  y: {
+                      display: true,
+                      title: {
+                          display: true,
+                          text: 'Nivel (m)',
+                          color: '#ecf0f1'
+                      },
+                      ticks: {
+                          color: '#bdc3c7',
+                          beginAtZero: false
+                      }
+                  }
+              }
+          }
+      });
+
+      // Descripción dinámica basada en el reporte
+      const dia = reporte.dia;
+      const noche = reporte.noche;
+      document.getElementById('descripcion').innerHTML = `
+          <p>Durante el día, el nivel inició en <strong>${dia.tirante_inicio} m</strong> y terminó en <strong>${dia.tirante_fin} m</strong>,
+          con un volumen rebombeado de <strong>${dia.volumen_rebombeado} m³</strong> y un gasto promedio de <strong>${dia.gasto_lps} L/s</strong>.</p>
+          <p>Durante la noche, el nivel inició en <strong>${noche.tirante_inicio} m</strong> y terminó en <strong>${noche.tirante_fin} m</strong>,
+          con un volumen rebombeado de <strong>${noche.volumen_rebombeado} m³</strong> y un gasto promedio de <strong>${noche.gasto_lps} L/s</strong>.</p>
+      `;
+    }
+
+    fetchData();
+  </script>
+</body>
+</html>

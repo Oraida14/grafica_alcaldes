@@ -36,33 +36,42 @@ def build_query():
 def push_to_github(repo_path, file_path):
     try:
         repo = git.Repo(repo_path)
+
+        # Añadir y confirmar el archivo específico
         repo.git.add(file_path)
         commit_message = f"Update {os.path.basename(file_path)} {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         repo.index.commit(commit_message)
+
+        # Hacer push con manejo de errores
         origin = repo.remote(name='origin')
         push_info = origin.push()
         if push_info[0].flags & push_info[0].ERROR:
             logging.error(f"Error al subir a GitHub: {push_info[0].summary}")
         else:
             logging.info(f"{file_path} subido a GitHub exitosamente ✅")
+
     except git.exc.GitCommandError as e:
         logging.error(f"Error al subir a GitHub: {e}")
         logging.error("Asegúrate de que no haya conflictos y de que tengas permisos para hacer push.")
     except Exception as e:
         logging.error(f"Error inesperado al subir a GitHub: {e}")
 
+
+
+
 def analizar_comportamiento(df):
     NIVEL_MAX = 3.0  # metros
-    CAPACIDAD = 5000  # m³
-    AREA_BASE_TANQUE = 1720.82  # m²
-    CAPACIDAD_PIPA = 7.57  # m³ (7,570 litros)
+    CAPACIDAD = 5000  # m3
     df['t_stamp'] = pd.to_datetime(df['t_stamp'])
+
     # Filtrar solo desde el primer día del mes actual
     now = datetime.now()
     fecha_inicio = pd.Timestamp(year=now.year, month=now.month, day=1)
     df = df[df['t_stamp'] >= fecha_inicio]
+
     # Agregar columna de hora
     df['hora'] = df['t_stamp'].dt.hour
+
     # Separar en día y noche
     dia = df[(df['hora'] >= 6) & (df['hora'] < 16)]
     noche = df[(df['hora'] >= 16) | (df['hora'] < 6)]
@@ -70,30 +79,25 @@ def analizar_comportamiento(df):
     def calcular_metricas(subset, es_noche=False):
         if subset.empty:
             return {}
+
         tirante_inicio = subset.iloc[0]['Nivel_1']
         tirante_fin = subset.iloc[-1]['Nivel_1']
         volumen_inicio = (tirante_inicio / NIVEL_MAX) * CAPACIDAD
         volumen_fin = (tirante_fin / NIVEL_MAX) * CAPACIDAD
         volumen_rebombeado = max(volumen_fin - volumen_inicio, 0)
+
         # Estimación de horas de operación
-        delta_t = subset['t_stamp'].diff().median().seconds / 3600 if len(subset) > 1 else 1
+        delta_t = df['t_stamp'].diff().median().seconds / 3600 if len(df) > 1 else 1
         horas_operacion = ((subset['Nivel_1'].diff() > 0).sum()) * delta_t
         gasto_promedio = (volumen_rebombeado * 1000) / (horas_operacion * 3600) if horas_operacion > 0 else 0
+
         # Análisis de seguridad
         alertas = []
         if es_noche:
-            # Calcular la tendencia previa
-            subset['tendencia'] = subset['Nivel_1'].diff().rolling(window=3).mean()
-            # Ajustar el umbral para detectar cambios equivalentes a 2 pipas (0.0088 metros)
-            cambios_significativos = subset[(subset['Nivel_1'].diff() < -0.01) & (subset['tendencia'] >= 0)]
+            cambios_significativos = subset[subset['Nivel_1'].diff().abs() > 0.1]  # Cambios mayores a 0.1 metros
             if not cambios_significativos.empty:
-                alertas.append(f"Descargas nocturnas no autorizadas: {len(cambios_significativos)} eventos")
-                # Calcular el volumen total extraído
-                volumen_extraido_total = abs((cambios_significativos['Nivel_1'].diff()).sum() * AREA_BASE_TANQUE)
-                alertas.append(f"Volumen total extraído: {volumen_extraido_total:.2f} m³ ({volumen_extraido_total * 1000:.0f} litros)")
-                # Calcular el número equivalente de pipas
-                num_pipas_equivalente = volumen_extraido_total / CAPACIDAD_PIPA
-                alertas.append(f"Equivalente a {num_pipas_equivalente:.1f} pipas")
+                alertas.append(f"Cambios significativos en la noche: {len(cambios_significativos)} eventos")
+
         return {
             "tirante_inicio": round(tirante_inicio, 2),
             "tirante_fin": round(tirante_fin, 2),
@@ -104,6 +108,7 @@ def analizar_comportamiento(df):
             "gasto_lps": round(gasto_promedio, 1),
             "alertas": alertas
         }
+
     return {
         "dia": calcular_metricas(dia),
         "noche": calcular_metricas(noche, es_noche=True)
@@ -111,49 +116,47 @@ def analizar_comportamiento(df):
 
 def extract_and_update_data():
     db_connection = None
-    while True:  # Bucle infinito para ejecutar periódicamente
-        try:
-            logging.info("Conectando a la base de datos...")
-            db_connection_str = 'mysql+pymysql://admin:Password0@192.168.103.2/datos'
-            db_connection = create_engine(db_connection_str)
-            logging.info("Conexión a la base de datos exitosa.")
-            logging.info("Extrayendo datos históricos para tanque_alcaldes...")
-            query = build_query()
-            df = pd.read_sql(query, con=db_connection)
-            if df.empty:
-                logging.warning("No se encontraron datos para tanque_alcaldes.")
-            else:
-                df['nombre_sitio'] = 'tanque_alcaldes'
-                df['t_stamp'] = pd.to_datetime(df['t_stamp'])
-                df['fecha_hora'] = df['t_stamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
-                # Guardar CSV en la carpeta static
-                df.to_csv(CSV_PATH, index=False, encoding='utf-8-sig')
-                logging.info(f"Historial guardado en {CSV_PATH}")
-                # Analizar comportamiento
-                reporte = analizar_comportamiento(df)
-                with open(REPORTE_PATH, "w", encoding="utf-8") as f:
-                    json.dump(reporte, f, indent=4, ensure_ascii=False)
-                logging.info(f"Reporte guardado en {REPORTE_PATH}")
-                # Subir ambos archivos a GitHub
-                push_to_github(REPO_PATH, CSV_PATH)
-                push_to_github(REPO_PATH, REPORTE_PATH)
-                # Emitir datos y reporte al frontend
-                last_data = df.sort_values('t_stamp').drop_duplicates(subset=['nombre_sitio'], keep='last')
-                socketio.emit('update_data', {
-                    "ultimos_datos": last_data.to_dict(orient='records'),
-                    "reporte": reporte
-                })
-        except Exception as e:
-            logging.error(f"Ocurrió un error: {e}")
-        finally:
-            if db_connection:
-                db_connection.dispose()
-                logging.info("Conexión a la base de datos cerrada.")
-        time.sleep(300)  # Esperar 5 minutos antes de la siguiente ejecución
+    try:
+        logging.info("Conectando a la base de datos...")
+        db_connection_str = 'mysql+pymysql://admin:Password0@192.168.103.2/datos'
+        db_connection = create_engine(db_connection_str)
+        logging.info("Conexión a la base de datos exitosa.")
+        logging.info("Extrayendo datos históricos para tanque_alcaldes...")
+        query = build_query()
+        df = pd.read_sql(query, con=db_connection)
+        if df.empty:
+            logging.warning("No se encontraron datos para tanque_alcaldes.")
+            return
+        df['nombre_sitio'] = 'tanque_alcaldes'
+        df['t_stamp'] = pd.to_datetime(df['t_stamp'])
+        df['fecha_hora'] = df['t_stamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        # Guardar CSV en la carpeta static
+        df.to_csv(CSV_PATH, index=False, encoding='utf-8-sig')
+        logging.info(f"Historial guardado en {CSV_PATH}")
+        # Analizar comportamiento
+        reporte = analizar_comportamiento(df)
+        with open(REPORTE_PATH, "w", encoding="utf-8") as f:
+            json.dump(reporte, f, indent=4, ensure_ascii=False)
+        logging.info(f"Reporte guardado en {REPORTE_PATH}")
+        # Subir ambos archivos a GitHub
+        push_to_github(REPO_PATH, CSV_PATH)
+        push_to_github(REPO_PATH, REPORTE_PATH)
+        # Emitir datos y reporte al frontend
+        last_data = df.sort_values('t_stamp').drop_duplicates(subset=['nombre_sitio'], keep='last')
+        socketio.emit('update_data', {
+            "ultimos_datos": last_data.to_dict(orient='records'),
+            "reporte": reporte
+        })
+    except Exception as e:
+        logging.error(f"Ocurrió un error: {e}")
+    finally:
+        if db_connection:
+            db_connection.dispose()
+            logging.info("Conexión a la base de datos cerrada.")
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html')  # Cambiado de 'mapa.html' a 'alcaldes.html'
 
 @app.route('/seguridad')
 def seguridad():
@@ -171,6 +174,12 @@ def analisis():
 def detalle_alertas():
     return render_template('detalle_alertas.html')
 
+
+
+
+
+
 if __name__ == "__main__":
+    interval = 1800  # cada 30 min
     threading.Thread(target=extract_and_update_data, args=(), daemon=True).start()
     socketio.run(app, debug=True)

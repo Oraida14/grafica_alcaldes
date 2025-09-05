@@ -216,15 +216,16 @@
             const nivelSiguiente = parseFloat(filteredDataNoche[i + 1].Nivel_1);
             const cambioNivel = nivelActual - nivelSiguiente;
 
-            if (cambioNivel > 0 && estadisticasPorHora[horaActual]) {
-              const umbralInferior = estadisticasPorHora[horaActual].promedio - 2 * estadisticasPorHora[horaActual].desviacionEstandar;
-              if (nivelSiguiente < umbralInferior) {
-                enEvento = true;
-                inicioEvento = filteredDataNoche[i].fecha_hora;
-                nivelInicialEvento = nivelActual;
-                nivelMinimoEvento = nivelSiguiente;
-              }
-            }
+            if (cambioNivel > 0.1 && estadisticasPorHora[horaActual]) { // Cambio mínimo de 0.1 metros para considerar un evento
+    const umbralInferior = estadisticasPorHora[horaActual].promedio - 2 * estadisticasPorHora[horaActual].desviacionEstandar;
+    if (nivelSiguiente < umbralInferior) {
+        enEvento = true;
+        inicioEvento = filteredDataNoche[i].fecha_hora;
+        nivelInicialEvento = nivelActual;
+        nivelMinimoEvento = nivelSiguiente;
+    }
+}
+
           }
         } else {
           if (i === filteredDataNoche.length - 1 || parseFloat(filteredDataNoche[i + 1].Nivel_1) >= nivelMinimoEvento) {
