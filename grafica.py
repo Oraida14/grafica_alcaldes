@@ -163,9 +163,7 @@ def seguridad():
 def reporte():
     return render_template('reporte.html')
 
-@app.route('/analisis')
-def analisis():
-    return render_template('analisis.html')
+
 
 @app.route('/detalle-alertas')
 def detalle_alertas():
