@@ -10,12 +10,12 @@
         "alertas": []
     },
     "noche": {
-        "tirante_inicio": 1.82,
-        "tirante_fin": 1.51,
-        "volumen_inicio": 3034.0,
-        "volumen_fin": 2514.0,
+        "tirante_inicio": 1.85,
+        "tirante_fin": 1.52,
+        "volumen_inicio": 3076.0,
+        "volumen_fin": 2531.0,
         "volumen_rebombeado": 0,
-        "horas_operacion": 10.5,
+        "horas_operacion": 10.6,
         "gasto_lps": 0.0,
         "alertas": [
             "Cambios significativos en la noche: 11 eventos"
