@@ -11,11 +11,11 @@
     },
     "noche": {
         "tirante_inicio": 1.64,
-        "tirante_fin": 1.62,
-        "volumen_inicio": 2731.0,
-        "volumen_fin": 2703.0,
+        "tirante_fin": 1.64,
+        "volumen_inicio": 2733.0,
+        "volumen_fin": 2731.0,
         "volumen_rebombeado": 0,
-        "horas_operacion": 10.3,
+        "horas_operacion": 10.4,
         "gasto_lps": 0.0,
         "alertas": [
             "Descargas nocturnas no autorizadas: 1 eventos",
