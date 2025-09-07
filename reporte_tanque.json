@@ -1,22 +1,22 @@
 {
     "dia": {
         "tirante_inicio": 2.67,
-        "tirante_fin": 1.92,
-        "volumen_inicio": 4458.0,
-        "volumen_fin": 3194.0,
-        "volumen_rebombeado": 0,
-        "horas_operacion": 2.7,
-        "gasto_lps": 0.0,
+        "tirante_fin": 2.96,
+        "volumen_inicio": 4444.0,
+        "volumen_fin": 4939.0,
+        "volumen_rebombeado": 495.0,
+        "horas_operacion": 2.8,
+        "gasto_lps": 50.0,
         "alertas": []
     },
     "noche": {
-        "tirante_inicio": 2.67,
+        "tirante_inicio": 1.92,
         "tirante_fin": 2.95,
-        "volumen_inicio": 4452.0,
-        "volumen_fin": 4920.0,
-        "volumen_rebombeado": 468.0,
+        "volumen_inicio": 3204.0,
+        "volumen_fin": 4923.0,
+        "volumen_rebombeado": 1720.0,
         "horas_operacion": 9.2,
-        "gasto_lps": 14.1,
+        "gasto_lps": 51.6,
         "alertas": [
             "Descargas nocturnas no autorizadas: 1 eventos",
             "Volumen total extraído: 0.00 m³ (0 litros)",
