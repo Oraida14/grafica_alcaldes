@@ -10,13 +10,13 @@
         "alertas": []
     },
     "noche": {
-        "tirante_inicio": 2.49,
-        "tirante_fin": 2.89,
-        "volumen_inicio": 4149.0,
-        "volumen_fin": 4824.0,
-        "volumen_rebombeado": 675.0,
-        "horas_operacion": 9.6,
-        "gasto_lps": 19.6,
+        "tirante_inicio": 2.51,
+        "tirante_fin": 2.91,
+        "volumen_inicio": 4183.0,
+        "volumen_fin": 4845.0,
+        "volumen_rebombeado": 662.0,
+        "horas_operacion": 9.5,
+        "gasto_lps": 19.4,
         "alertas": [
             "Descargas nocturnas no autorizadas: 1 eventos",
             "Volumen total extraído: 0.00 m³ (0 litros)",
