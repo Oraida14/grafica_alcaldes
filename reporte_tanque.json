@@ -10,12 +10,12 @@
         "alertas": []
     },
     "noche": {
-        "tirante_inicio": 1.84,
-        "tirante_fin": 2.21,
-        "volumen_inicio": 3067.0,
-        "volumen_fin": 3680.0,
-        "volumen_rebombeado": 612.0,
-        "horas_operacion": 9.8,
+        "tirante_inicio": 1.85,
+        "tirante_fin": 2.22,
+        "volumen_inicio": 3083.0,
+        "volumen_fin": 3700.0,
+        "volumen_rebombeado": 617.0,
+        "horas_operacion": 9.9,
         "gasto_lps": 17.4,
         "alertas": [
             "Descargas nocturnas no autorizadas: 1 eventos",
