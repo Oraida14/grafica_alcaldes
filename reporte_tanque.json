@@ -12,11 +12,11 @@
     "noche": {
         "tirante_inicio": 1.59,
         "tirante_fin": 1.92,
-        "volumen_inicio": 2649.0,
-        "volumen_fin": 3202.0,
-        "volumen_rebombeado": 553.0,
-        "horas_operacion": 9.7,
-        "gasto_lps": 15.8,
+        "volumen_inicio": 2647.0,
+        "volumen_fin": 3204.0,
+        "volumen_rebombeado": 557.0,
+        "horas_operacion": 9.8,
+        "gasto_lps": 15.9,
         "alertas": []
     }
 }
