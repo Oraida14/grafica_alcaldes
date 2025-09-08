@@ -138,11 +138,12 @@ def extract_and_update_data():
                 push_to_github(REPO_PATH, CSV_PATH)
                 push_to_github(REPO_PATH, REPORTE_PATH)
                 # Emitir datos y reporte al frontend
-                last_data = df.sort_values('t_stamp').drop_duplicates(subset=['nombre_sitio'], keep='last')
+                last_data = df.drop_duplicates(subset=['nombre_sitio'], keep='last').tail(1)
                 socketio.emit('update_data', {
-                    "ultimos_datos": last_data.to_dict(orient='records'),
-                    "reporte": reporte
+                "ultimos_datos": last_data.to_dict(orient='records'),
+                "reporte": reporte
                 })
+
         except Exception as e:
             logging.error(f"Ocurrió un error: {e}")
         finally:
