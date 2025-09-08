@@ -1,9 +1,9 @@
 {
     "dia": {
-        "tirante_inicio": 2.72,
-        "tirante_fin": 1.91,
-        "volumen_inicio": 4526.0,
-        "volumen_fin": 3184.0,
+        "tirante_inicio": 2.73,
+        "tirante_fin": 1.92,
+        "volumen_inicio": 4543.0,
+        "volumen_fin": 3200.0,
         "volumen_rebombeado": 0,
         "horas_operacion": 1.8,
         "gasto_lps": 0.0,
