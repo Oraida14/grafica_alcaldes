@@ -5,6 +5,16 @@ python -m http.server 8000
 python grafica.py
 
 
+///////////////////////////////////////////
+
+ git add .
+
+ git commit -m " index cambio "   
+                                                                                                
+ git push origin master                                                                                                          
+///////////////////////////////////////////////////////////////////////////////
+
+
 📝 INSTRUCCIONES DE USO DE GIT – PROYECTO GRAFICA_ALCALDES
 1️⃣ Abrir Git Bash y moverse al proyecto
 # Navega a la carpeta donde está tu proyecto
