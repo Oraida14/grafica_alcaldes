@@ -11,9 +11,9 @@
     },
     "noche": {
         "tirante_inicio": 2.72,
-        "tirante_fin": 2.33,
-        "volumen_inicio": 4541.0,
-        "volumen_fin": 3885.0,
+        "tirante_fin": 2.32,
+        "volumen_inicio": 4536.0,
+        "volumen_fin": 3871.0,
         "volumen_rebombeado": 0,
         "horas_operacion": 8.2,
         "gasto_lps": 0.0,
