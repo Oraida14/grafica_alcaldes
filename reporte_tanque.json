@@ -1,22 +1,22 @@
 {
     "dia": {
-        "tirante_inicio": 2.19,
-        "tirante_fin": 2.11,
-        "volumen_inicio": 3652.0,
-        "volumen_fin": 3522.0,
-        "volumen_rebombeado": 0,
-        "horas_operacion": 2.0,
-        "gasto_lps": 0.0,
+        "tirante_inicio": 2.58,
+        "tirante_fin": 2.68,
+        "volumen_inicio": 4304.0,
+        "volumen_fin": 4459.0,
+        "volumen_rebombeado": 154.0,
+        "horas_operacion": 1.0,
+        "gasto_lps": 42.8,
         "alertas": []
     },
     "noche": {
-        "tirante_inicio": 1.91,
-        "tirante_fin": 2.76,
-        "volumen_inicio": 3190.0,
-        "volumen_fin": 4597.0,
-        "volumen_rebombeado": 1406.0,
-        "horas_operacion": 9.4,
-        "gasto_lps": 41.6,
+        "tirante_inicio": 1.48,
+        "tirante_fin": 2.84,
+        "volumen_inicio": 2461.0,
+        "volumen_fin": 4729.0,
+        "volumen_rebombeado": 2268.0,
+        "horas_operacion": 11.8,
+        "gasto_lps": 53.6,
         "alertas": []
     }
 }
