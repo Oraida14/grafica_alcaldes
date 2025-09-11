@@ -10,13 +10,13 @@
         "alertas": []
     },
     "noche": {
-        "tirante_inicio": 2.09,
-        "tirante_fin": 2.34,
-        "volumen_inicio": 3488.0,
-        "volumen_fin": 3896.0,
-        "volumen_rebombeado": 407.0,
+        "tirante_inicio": 2.11,
+        "tirante_fin": 2.35,
+        "volumen_inicio": 3510.0,
+        "volumen_fin": 3913.0,
+        "volumen_rebombeado": 402.0,
         "horas_operacion": 11.0,
-        "gasto_lps": 10.3,
+        "gasto_lps": 10.2,
         "alertas": []
     }
 }
