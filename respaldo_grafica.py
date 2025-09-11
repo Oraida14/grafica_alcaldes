@@ -118,7 +118,7 @@ def extract_and_update_data():
     db_connection = None
     try:
         logging.info("Conectando a la base de datos...")
-        db_connection_str = 'mysql+pymysql://admin:Password0@192.168.103.2/datos'
+        db_connection_str = 'mysql+pymysql://************************'
         db_connection = create_engine(db_connection_str)
         logging.info("Conexión a la base de datos exitosa.")
         logging.info("Extrayendo datos históricos para tanque_alcaldes...")
