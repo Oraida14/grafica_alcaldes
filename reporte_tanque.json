@@ -13,10 +13,10 @@
         "tirante_inicio": 2.57,
         "tirante_fin": 2.79,
         "volumen_inicio": 4291.0,
-        "volumen_fin": 4642.0,
-        "volumen_rebombeado": 351.0,
+        "volumen_fin": 4652.0,
+        "volumen_rebombeado": 360.0,
         "horas_operacion": 11.0,
-        "gasto_lps": 8.9,
+        "gasto_lps": 9.1,
         "alertas": []
     }
 }
