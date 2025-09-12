@@ -1,11 +1,11 @@
 {
-    "tirante_termino_anterior_16": 1.97,
-    "volumen_termino_anterior_16": 3281.0,
-    "volumen_acumulado_16_06": 1630.0,
+    "tirante_termino_anterior_16": 1.98,
+    "volumen_termino_anterior_16": 3293.0,
+    "volumen_acumulado_16_06": 1619.0,
     "tirante_inicio_06": 2.95,
     "volumen_inicio_06": 4911.0,
-    "volumen_rebombeado": 1630.0,
-    "horas_operacion": 8.6,
-    "gasto_promedio_lps": 53.0,
-    "volumen_total_24h": 1630.0
+    "volumen_rebombeado": 1619.0,
+    "horas_operacion": 8.5,
+    "gasto_promedio_lps": 52.9,
+    "volumen_total_24h": 1619.0
 }
