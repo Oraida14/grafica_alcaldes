@@ -9,7 +9,7 @@ python grafica.py
 
  git add .
 
- git commit -m " index cambio "   
+ git commit -m " reporte_tanque.json "   
                                                                                                 
  git push origin master                                                                                                          
 ///////////////////////////////////////////////////////////////////////////////
