@@ -2,17 +2,14 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard Tanque Alcaldes</title>
+  <title>Dashboard Tanque Alcaldes - Análisis Diario</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.1/socket.io.min.js"></script>
   <style>
-    body {
-      background-color: #121212;
-      color: #e0e0e0;
-      font-family: 'Segoe UI', sans-serif;
-      padding: 20px;
-    }
+    body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; padding: 20px; }
     .card {
       width: 100%;
       background: linear-gradient(145deg, #2c3e50, #34495e);
@@ -23,310 +20,320 @@
       transition: transform 0.3s, box-shadow 0.3s;
       box-sizing: border-box;
     }
-    .metric-value {
-      color: #3498db;
-      font-weight: bold;
-      font-size: 1.2em;
-    }
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 6px 20px rgba(11, 220, 235, 0.5);
-    }
+    .metric-value { color: #ffffff; font-weight: bold; font-size: 1.2em; }
+    .card:hover { transform: translateY(-5px); box-shadow: 0 6px 20px rgba(11, 220, 235, 0.5); }
     .chart-container {
       width: 100%;
-      height: 400px;
+      height: 500px;
       border-radius: 10px;
-      background: rgba(255, 255, 255, 0.05);
-      padding: 10px;
+      background: rgba(255,255,255,0.05);
+      padding: 20px 10px 10px 10px;
+      margin-top: 40px;
       margin-bottom: 20px;
       box-sizing: border-box;
     }
-    .chart-container canvas {
-      width: 100% !important;
-      height: 100% !important;
-    }
-    .analysis-description {
-      background-color: rgba(224, 213, 213, 0.1);
-      color: #e0e0e0;
-      padding: 15px;
-      border-radius: 10px;
-      border-left: 4px solid #3498db;
-    }
-    h1, h4, h5 {
-      color: #ecf0f1;
-    }
-    .metrics-container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-    .metric-card {
-      flex: 1;
-      min-width: 200px;
-      margin: 10px;
-    }
-    .navbar {
-      margin-bottom: 20px;
-    }
+    .chart-container canvas { width: 100% !important; height: 100% !important; }
+    .analysis-description { background-color: rgba(224,213,213,0.1); color: #e0e0e0; padding: 15px; border-radius: 10px; border-left: 4px solid #3498db; }
+    h1, h4, h5 { color: #ffffff; }
+    .metrics-container { display: flex; flex-wrap: wrap; justify-content: space-between; margin-bottom: 20px; }
+    .metric-card { flex: 1; min-width: 200px; margin: 10px; }
+    .navbar { margin-bottom: 20px; }
   </style>
 </head>
 <body>
-<!-- 🔹 Navbar corregido -->
-<!-- 🔹 Navbar corregido -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
-    <a class="navbar-brand" href="index.html">Tanque Alcaldes</a>
+    
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
       aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav">
-        <li class="nav-item">
-          <a class="nav-link" href="index.html">Análisis General</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="reporte.html">Reporte</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="seguridad.html">Seguridad</a>
-        </li>
+      
         
-        <li class="nav-item">
-          <a class="nav-link" href="https://oraida14.github.io/grafica_alcaldes/detalle_alertas.html">Detalle Alertas</a>
-        </li>
       </ul>
     </div>
   </div>
 </nav>
-
 <script>
-  // 🔹 Resaltar pestaña activa según la URL
-  const currentPage = window.location.pathname.split("/").pop(); // obtiene index.html, reporte.html, etc.
-  const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
-
-  navLinks.forEach(link => {
-    if (link.getAttribute('href') === currentPage) {
-      link.classList.add('active');
-    } else {
-      link.classList.remove('active');
-    }
+  const currentPage = window.location.pathname.split("/").pop();
+  document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+    if(link.getAttribute('href') === currentPage) link.classList.add('active');
+    else link.classList.remove('active');
   });
 </script>
-
-
-
-
-  <h1 class="text-center mb-4">Análisis - Tanque Alcaldes</h1>
-  <div class="metrics-container">
-  <div class="metric-card">
-    <div class="card">
-      <h5>Promedio</h5>
-      <p id="promedio" class="metric-value">--</p>
-    </div>
-  </div>
-  <div class="metric-card">
-    <div class="card">
-      <h5>Mediana</h5>
-      <p id="mediana" class="metric-value">--</p>
-    </div>
-  </div>
-  <div class="metric-card">
-    <div class="card">
-      <h5>Desviación Estándar</h5>
-      <p id="desviacion" class="metric-value">--</p>
-    </div>
-  </div>
-  <div class="metric-card">
-    <div class="card">
-      <h5>Nivel Máximo</h5>
-      <p id="nivelMaximo" class="metric-value">--</p>
-    </div>
-  </div>
-  <div class="metric-card">
-    <div class="card">
-      <h5>Nivel Mínimo</h5>
-      <p id="nivelMinimo" class="metric-value">--</p>
-    </div>
-  </div>
-  <div class="metric-card">
-    <div class="card">
-      <h5>Tendencia</h5>
-      <p id="tendencia" class="metric-value">--</p>
-    </div>
+<h1 class="text-center mb-4">Análisis Diario del Tanque (06:00 a 06:00)</h1>
+<div class="metrics-container">
+  <div class="metric-card"><div class="card"><h5>Tirante 16:00 Día Anterior</h5><p id="tirante16" class="metric-value">--</p></div></div>
+  <div class="metric-card"><div class="card"><h5>Volumen 16:00 Día Anterior</h5><p id="volumen16" class="metric-value">--</p></div></div>
+  <div class="metric-card"><div class="card"><h5>Tirante 06:00 Inicio Jornada</h5><p id="tirante06" class="metric-value">--</p></div></div>
+  <div class="metric-card"><div class="card"><h5>Volumen 06:00 Inicio Jornada</h5><p id="volumen06" class="metric-value">--</p></div></div>
+  <div class="metric-card"><div class="card"><h5>Volumen Reb/Pipas</h5><p id="rebombeado" class="metric-value">--</p></div></div>
+  <div class="metric-card"><div class="card"><h5>Horas de Operación</h5><p id="horas" class="metric-value">--</p></div></div>
+  <div class="metric-card"><div class="card"><h5>Gasto Promedio (l/s)</h5><p id="gasto" class="metric-value">--</p></div></div>
+  <div class="metric-card"><div class="card"><h5>Volumen Total 24h</h5><p id="volTotal" class="metric-value">--</p></div></div>
+</div>
+<div class="card">
+  <h4 class="text-center">Nivel del Tanque (06:00 a 06:00)</h4>
+  <div class="chart-container"><canvas id="nivelChart"></canvas></div>
+</div>
+<div class="card">
+  <h4 class="text-center">Descripción del Análisis</h4>
+  <div class="analysis-description" id="descripcion">
+    <p>Cargando análisis...</p>
   </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* Constantes por si el reporte viene sin volumen calculado */
+const NIVEL_MAX = 3.0;
+const CAPACIDAD = 5000;
+let nivelChart = null;
+Chart.register(ChartDataLabels);
 
-  <div class="card">
-    <h4 class="text-center">Histórico Nivel del Tanque (30 días)</h4>
-    <div class="chart-container">
-      <canvas id="nivelChart"></canvas>
-    </div>
-  </div>
-  <div class="card">
-    <h4 class="text-center">Análisis Diario y Nocturno</h4>
-    <div class="analysis-description" id="descripcion">
-      <p>El gráfico muestra la evolución del nivel del tanque Alcaldes. Las métricas resumen el comportamiento de los últimos 30 días.</p>
-    </div>
-  </div>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    async function fetchData() {
-      // Tu código JavaScript existente
-      // Cargar datos desde los archivos en GitHub
-      const csvUrl = 'https://raw.githubusercontent.com/Oraida14/grafica_alcaldes/master/static/tanque_alcaldes.csv';
-      const reporteUrl = 'https://raw.githubusercontent.com/Oraida14/grafica_alcaldes/master/reporte_tanque.json';
+function findClosestIndex(dates, target) {
+  if (!dates || dates.length === 0) return -1;
+  let bestI = 0;
+  let bestDiff = Math.abs(dates[0] - target);
+  for (let i = 1; i < dates.length; i++) {
+    const diff = Math.abs(dates[i] - target);
+    if (diff < bestDiff) { bestDiff = diff; bestI = i; }
+  }
+  return bestI;
+}
 
-      // Cargar datos CSV
-      const response = await fetch(csvUrl);
-      const csvText = await response.text();
-      const results = Papa.parse(csvText, {
-          header: true,
-          dynamicTyping: true,
-      });
-      const data = results.data;
+async function cargarDatos() {
+  // Leer CSV
+  const csvResp = await fetch('/static/dashboard_data.csv');
+  const csvText = await csvResp.text();
+  const results = Papa.parse(csvText, { header: true, dynamicTyping: true });
+  const rawData = results.data.filter(d => d && d.Nivel_1 !== undefined);
 
-      // Filtrar los datos para ignorar los ceros que duran menos de una hora
-      let filteredData = [];
-      let zeroStartTime = null;
-      for (let i = 0; i < data.length; i++) {
-          if (data[i].Nivel_1 === 0) {
-              if (zeroStartTime === null) {
-                  zeroStartTime = new Date(data[i].fecha_hora);
-              }
-              // Si es el último dato, añadirlo si no supera una hora
-              if (i === data.length - 1 && zeroStartTime !== null) {
-                  let zeroEndTime = new Date(data[i].fecha_hora);
-                  let zeroDuration = (zeroEndTime - zeroStartTime) / (1000 * 60); // Duración en minutos
-                  if (zeroDuration <= 1) { // Si dura 1 minuto o menos, ignorar
-                      continue;
-                  }
-              }
-          } else {
-              if (zeroStartTime !== null) {
-                  let zeroEndTime = new Date(data[i - 1].fecha_hora);
-                  let zeroDuration = (zeroEndTime - zeroStartTime) / (1000 * 60); // Duración en minutos
-                  if (zeroDuration <= 60) { // Si dura 1 hora o menos, ignorar los ceros
-                      zeroStartTime = null;
-                      continue;
-                  }
-                  zeroStartTime = null;
-              }
-              filteredData.push(data[i]);
-          }
-      }
+  // Ignorar ceros (falsos negativos)
+  const data = rawData.filter(d => d.Nivel_1 > 0);
 
-      // Cargar reporte JSON
-      const reporteResponse = await fetch(reporteUrl);
-      const reporte = await reporteResponse.json();
+  // Leer reporte
+  const jsonResp = await fetch('/reporte_nuevo');
+  const reporte = await jsonResp.json();
 
-      // Calcular estadísticas con los datos filtrados
-      const niveles = filteredData.map(d => d.Nivel_1);
-      const fechas = filteredData.map(d => d.fecha_hora);
-      const promedio = niveles.reduce((a, b) => a + b, 0) / niveles.length;
-      const sorted = [...niveles].sort((a, b) => a - b);
-      const mediana = sorted.length % 2 ? sorted[Math.floor(sorted.length / 2)] : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2;
-      const desviacion = Math.sqrt(niveles.reduce((sq, n) => sq + Math.pow(n - promedio, 2), 0) / niveles.length);
-      const nivelMaximo = Math.max(...niveles);
-      const nivelMinimo = Math.min(...niveles);
-      const tendencia = niveles[niveles.length - 1] > niveles[0] ? "Aumentando" : "Disminuyendo";
+  // Mostrar métricas (usar fallback con guiones si null)
+  const show = (v) => (v === null || v === undefined) ? '--' : v;
+  document.getElementById('tirante16').textContent = show(reporte.tirante_termino_anterior_16);
+  document.getElementById('volumen16').textContent = show(reporte.volumen_termino_anterior_16);
+  document.getElementById('tirante06').textContent = show(reporte.tirante_inicio_06);
+  document.getElementById('volumen06').textContent = show(reporte.volumen_inicio_06);
+  document.getElementById('rebombeado').textContent = show(reporte.volumen_rebombeado);
+  document.getElementById('horas').textContent = show(reporte.horas_operacion);
+  document.getElementById('gasto').textContent = show(reporte.gasto_promedio_lps);
+  document.getElementById('volTotal').textContent = show(reporte.volumen_total_24h);
 
-      // Mostrar métricas
-      document.getElementById('promedio').textContent = promedio.toFixed(2);
-      document.getElementById('mediana').textContent = mediana.toFixed(2);
-      document.getElementById('desviacion').textContent = desviacion.toFixed(2);
-      document.getElementById('nivelMaximo').textContent = nivelMaximo.toFixed(2);
-      document.getElementById('nivelMinimo').textContent = nivelMinimo.toFixed(2);
-      document.getElementById('tendencia').textContent = tendencia;
+  if (data.length === 0) {
+    document.getElementById('descripcion').innerHTML = `<p>No hay datos válidos en el CSV para mostrar (06:00 a 06:00).</p>`;
+    if (nivelChart) { nivelChart.destroy(); nivelChart = null; }
+    return;
+  }
 
-      // Crear gráfico
-      const ctx = document.getElementById('nivelChart').getContext('2d');
-      // Asegúrate de que el contenedor del canvas tenga el tamaño correcto
-      document.getElementById('nivelChart').style.width = '100%';
-      document.getElementById('nivelChart').style.height = '100%';
+  // Preparar etiquetas y arrays
+// Preparar etiquetas y arrays
+const fechasDate = data.map(d => new Date(d.t_stamp));
 
-      new Chart(ctx, {
-          type: 'line',
-          data: {
-              labels: fechas,
-              datasets: [{
-                  label: 'Nivel (m)',
-                  data: niveles,
-                  borderColor: 'rgba(52, 152, 219, 1)',
-                  backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                  borderWidth: 3,
-                  fill: true,
-                  tension: 0.3,
-                  pointRadius: 0,
-                  pointHoverRadius: 0,
-              }]
-          },
-          options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              interaction: {
-                  mode: 'nearest',
-                  axis: 'x',
-                  intersect: false
-              },
-              plugins: {
-                  tooltip: {
-                      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                      titleColor: '#ecf0f1',
-                      bodyColor: '#ecf0f1',
-                      padding: 10,
-                      displayColors: false,
-                  },
-                  title: {
-                      display: true,
-                      text: 'Nivel del Tanque Alcaldes - Últimos 30 días',
-                      color: '#ecf0f1',
-                      font: {
-                          size: 16
-                      }
-                  }
-              },
-              scales: {
-                  x: {
-                      display: true,
-                      title: {
-                          display: true,
-                          text: 'Fecha/Hora',
-                          color: '#ecf0f1'
-                      },
-                      ticks: {
-                          color: '#bdc3c7'
-                      }
-                  },
-                  y: {
-                      display: true,
-                      title: {
-                          display: true,
-                          text: 'Nivel (m)',
-                          color: '#ecf0f1'
-                      },
-                      ticks: {
-                          color: '#bdc3c7',
-                          beginAtZero: false
-                      }
-                  }
-              }
-          }
-      });
+// Filtrar datos para que comiencen desde las 05:57 del día anterior y terminen a las 07:00 del día actual
+const now = new Date();
+let today0600 = new Date(now);
+today0600.setHours(6, 0, 0, 0);
 
-      // Descripción dinámica basada en el reporte
-      const dia = reporte.dia;
-      const noche = reporte.noche;
-      document.getElementById('descripcion').innerHTML = `
-          <p>Durante el día, el nivel inició en <strong>${dia.tirante_inicio} m</strong> y terminó en <strong>${dia.tirante_fin} m</strong>,
-          con un volumen rebombeado de <strong>${dia.volumen_rebombeado} m³</strong> y un gasto promedio de <strong>${dia.gasto_lps} L/s</strong>.</p>
-          <p>Durante la noche, el nivel inició en <strong>${noche.tirante_inicio} m</strong> y terminó en <strong>${noche.tirante_fin} m</strong>,
-          con un volumen rebombeado de <strong>${noche.volumen_rebombeado} m³</strong> y un gasto promedio de <strong>${noche.gasto_lps} L/s</strong>.</p>
-      `;
+if (now < today0600) {
+  today0600.setDate(today0600.getDate() - 1);
+}
+
+const startTime = new Date(today0600);
+startTime.setDate(startTime.getDate() - 1);
+startTime.setHours(5, 57, 0, 0); // Asegúrate de que comience a las 05:57 del día anterior
+
+const endTime = new Date(today0600);
+endTime.setHours(7, 0, 0, 0); // Ajusta para que termine a las 07:00 del día actual
+
+const filteredData = data.filter(d => {
+  const date = new Date(d.t_stamp);
+  return date >= startTime && date <= endTime;
+});
+
+// Formatear etiquetas para mostrar fecha y hora
+const etiquetas = filteredData.map(d => {
+  const date = new Date(d.t_stamp);
+  return date.toLocaleString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+});
+
+const niveles = filteredData.map(d => d.Nivel_1);
+
+// Fechas objetivo para marcadores:
+const targetPrev06 = new Date(startTime);
+const targetPrev16 = new Date(startTime);
+targetPrev16.setHours(16, 0, 0, 0);
+const targetCur06 = new Date(today0600); // Asegúrate de que targetCur06 sea las 06:00 del día actual
+
+// Encontrar índices más cercanos en el CSV para ubicar los puntos en el eje X
+const idxPrev06 = findClosestIndex(fechasDate, targetPrev06);
+const idxPrev16 = findClosestIndex(fechasDate, targetPrev16);
+const idxCur06 = findClosestIndex(fechasDate, targetCur06);
+
+
+  // Helper para obtener nivel y volumen con fallback
+  const nivelFallback = (reportField, idx) => {
+    const r = reporte[reportField];
+    if (r !== null && r !== undefined) return r;
+    if (idx >= 0 && filteredData[idx] && filteredData[idx].Nivel_1 !== undefined) return filteredData[idx].Nivel_1;
+    return null;
+  };
+
+  const volumenFallback = (reportFieldVol, nivelVal) => {
+    const v = reporte[reportFieldVol];
+    if (v !== null && v !== undefined) return v;
+    if (nivelVal !== null && nivelVal !== undefined) return Math.round((nivelVal / NIVEL_MAX) * CAPACIDAD);
+    return null;
+  };
+
+  // Construir marcadores (solo si existe índice válido)
+  const marcadores = [];
+  if (idxPrev06 >= 0) {
+    const nivelP06 = nivelFallback('tirante_inicio_anterior_06', idxPrev06);
+    const volP06 = volumenFallback('volumen_inicio_anterior_06', nivelP06);
+    marcadores.push({ idx: idxPrev06, x: etiquetas[idxPrev06], y: nivelP06, volumen: volP06, label: '06:00 Día Anterior', color: 'rgba(52,152,219,1)'});
+  }
+  if (idxPrev16 >= 0) {
+    const nivel16 = nivelFallback('tirante_termino_anterior_16', idxPrev16);
+    const vol16 = volumenFallback('volumen_termino_anterior_16', nivel16);
+    marcadores.push({ idx: idxPrev16, x: etiquetas[idxPrev16], y: nivel16, volumen: vol16, label: '16:00 Día Anterior', color: 'rgba(241,196,15,1)'});
+  }
+  if (idxCur06 >= 0) {
+    const nivelC06 = nivelFallback('tirante_inicio_06', idxCur06);
+    const volC06 = volumenFallback('volumen_inicio_06', nivelC06);
+    marcadores.push({ idx: idxCur06, x: etiquetas[idxCur06], y: nivelC06, volumen: volC06, label: '06:00 Inicio Jornada', color: 'rgba(231,76,60,1)'});
+  }
+
+  // Destruye gráfica anterior si existe
+  if (nivelChart) {
+    nivelChart.destroy();
+    nivelChart = null;
+  }
+
+  // Datasets scatter para marcadores (uno por marcador para datalabels y tooltip limpio)
+  const scatterDatasets = marcadores.map(m => ({
+    label: m.label,
+    type: 'scatter',
+    data: [{ x: m.x, y: m.y, volumen: m.volumen, label: m.label }],
+    backgroundColor: m.color,
+    borderColor: '#ffffff',
+    pointRadius: 6,
+    pointHoverRadius: 8,
+    datalabels: {
+      display: true,
+      align: 'top',
+      formatter: (val) => {
+        if (!val || val.y === null) return '';
+        return `${val.y} m\n${val.volumen !== null ? val.volumen + ' m³' : ''}`;
+      },
+      color: '#fff',
+      font: { weight: '600', size: 11 }
     }
+  }));
 
-    fetchData();
-  </script>
+  // Datasets para líneas verticales punteadas
+  const verticalLineDatasets = [];
+  if (marcadores.length > 0) {
+    marcadores.forEach((m, index) => {
+      verticalLineDatasets.push({
+        label: `${m.label} (Vertical)`,
+        data: [{ x: m.x, y: 0 }, { x: m.x, y: NIVEL_MAX }],
+        borderColor: m.color,
+        borderDash: [6, 4],
+        borderWidth: 1,
+        pointRadius: 0,
+        fill: false,
+        showLine: true
+      });
+    });
+  }
+
+  // Crear gráfica
+  const ctx = document.getElementById('nivelChart').getContext('2d');
+  nivelChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: etiquetas,
+      datasets: [
+        {
+          label: 'Nivel (m)',
+          data: niveles,
+          borderColor: 'rgba(52,152,219,1)',
+          backgroundColor: 'rgba(52,152,219,0.12)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.25,
+          pointRadius: 0
+        },
+        ...scatterDatasets,
+        ...verticalLineDatasets
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'nearest', intersect: false },
+      plugins: {
+        tooltip: {
+          enabled: true,
+          position: 'average',
+          mode: 'nearest',
+          intersect: false,
+          callbacks: {
+            label: function(context) {
+              if (context.dataset.type === 'scatter') {
+                const raw = context.raw;
+                if (raw && raw.y !== null) {
+                  return [`${raw.label || context.dataset.label}`, `Nivel: ${raw.y} m`, raw.volumen !== null ? `Volumen: ${raw.volumen} m³` : 'Volumen: --'];
+                }
+                return context.dataset.label;
+              } else {
+                return `Nivel: ${context.parsed.y} m`;
+              }
+            }
+          }
+        },
+        legend: { labels: { color: '#ffffff' } },
+        title: { display: true, text: 'Nivel del Tanque 06:00 a 06:00', color: '#ffffff', font: { size: 16 } },
+        datalabels: { display: false }
+      },
+      scales: {
+        x: { ticks: { color: '#bdc3c7' }, title: { display: true, text: 'Hora', color: '#ffffff' } },
+        y: { ticks: { color: '#bdc3c7' }, title: { display: true, text: 'Nivel (m)', color: '#ffffff' }, beginAtZero: false }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+
+  // Descripción dinámica (texto resumen)
+  document.getElementById('descripcion').innerHTML = `
+    <p>Tirante al término de la jornada día anterior (16:00 hrs): <strong>${show(reporte.tirante_termino_anterior_16)} m</strong> — Volumen: <strong>${show(reporte.volumen_termino_anterior_16)} m³</strong>.</p>
+    <p>Volumen acumulado (16:00 a 06:00): <strong>${show(reporte.volumen_rebombeado)} m³</strong>.</p>
+    <p>Tirante al comienzo de la jornada (06:00 hrs): <strong>${show(reporte.tirante_inicio_06)} m</strong> — Volumen: <strong>${show(reporte.volumen_inicio_06)} m³</strong>.</p>
+  `;
+}
+
+// SocketIO para actualización en tiempo real
+const socket = io();
+socket.on('update_data', () => { cargarDatos(); });
+
+// Cargar al abrir
+cargarDatos();
+</script>
 </body>
 </html>
