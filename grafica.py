@@ -8,6 +8,7 @@ import threading
 import time
 import git
 import json
+import shutil
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
@@ -15,8 +16,12 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 REPO_PATH = "C:/Users/mafierro/3D Objects/grafica_alcaldes"
-CSV_PATH = os.path.join(REPO_PATH, "static", "dashboard_data.csv")
+STATIC_PATH = os.path.join(REPO_PATH, "static")
+DOCS_PATH = os.path.join(REPO_PATH, "docs")
+CSV_PATH = os.path.join(STATIC_PATH, "dashboard_data.csv")
 REPORTE_PATH = os.path.join(REPO_PATH, "reporte_nuevo.json")
+DOCS_CSV_PATH = os.path.join(DOCS_PATH, "dashboard_data.csv")
+DOCS_REPORTE_PATH = os.path.join(DOCS_PATH, "reporte_nuevo.json")
 
 def push_to_github(repo_path, file_path):
     try:
@@ -61,7 +66,6 @@ def analizar_comportamiento_nuevo(df):
     volumen_06_actual = calcular_volumen(tirante_06_actual) if tirante_06_actual else None
 
     volumen_rebombeado = volumen_06_actual - volumen_16 if volumen_06_actual else None
-
     horas_operacion = 10
     gasto_promedio = (volumen_rebombeado * 1000) / (horas_operacion * 3.6) if volumen_rebombeado else None
 
@@ -101,12 +105,23 @@ def extract_and_update_data():
                 df['fecha_hora'] = df['t_stamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
                 df.to_csv(CSV_PATH, index=False, encoding='utf-8-sig')
                 logging.info(f"CSV guardado en {CSV_PATH}")
+
+                # Copiar el archivo CSV a la carpeta docs
+                shutil.copy(CSV_PATH, DOCS_CSV_PATH)
+                logging.info(f"CSV copiado a {DOCS_CSV_PATH}")
+
                 reporte = analizar_comportamiento_nuevo(df)
                 with open(REPORTE_PATH, 'w', encoding='utf-8') as f:
                     json.dump(reporte, f, indent=4, ensure_ascii=False)
                 logging.info(f"Reporte actualizado en {REPORTE_PATH}")
-                push_to_github(REPO_PATH, CSV_PATH)
-                push_to_github(REPO_PATH, REPORTE_PATH)
+
+                # Copiar el archivo de reporte a la carpeta docs
+                shutil.copy(REPORTE_PATH, DOCS_REPORTE_PATH)
+                logging.info(f"Reporte copiado a {DOCS_REPORTE_PATH}")
+
+                push_to_github(REPO_PATH, DOCS_CSV_PATH)
+                push_to_github(REPO_PATH, DOCS_REPORTE_PATH)
+
                 socketio.emit('update_data', {
                     "ultimos_datos": df.tail(1).to_dict(orient='records'),
                     "reporte": reporte
