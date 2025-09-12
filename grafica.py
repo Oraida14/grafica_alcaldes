@@ -33,28 +33,6 @@ def push_to_github(repo_path, file_path):
     except Exception as e:
         logging.error(f"Error al subir a GitHub: {e}")
 
-NIVEL_MAX = 3.0
-CAPACIDAD = 5000
-
-def analizar_comportamiento_nuevo(df):
-    df['t_stamp'] = pd.to_datetime(df['t_stamp'])
-    df = df[df['Nivel_1'] > 0]
-    ahora = datetime.now()
-    inicio = (ahora - timedelta(days=1)).replace(hour=5, minute=57, second=0, microsecond=0)
-    fin = ahora.replace(hour=5, minute=57, second=0, microsecond=0)
-    df = df[(df['t_stamp'] >= inicio) & (df['t_stamp'] <= fin)].sort_values('t_stamp')
-    if df.empty:
-        return {}
-
-    def valor_mas_cercano(hora_objetivo):
-        df['diff_horas'] = abs(df['t_stamp'].dt.hour + df['t_stamp'].dt.minute/60 - hora_objetivo)
-        return df.loc[df['diff_horas'].idxmin(), 'Nivel_1']
-
-    tirante_16 = valor_mas_cercano(16)
-    tirante_06_anterior = valor_mas_cercano(6)
-    tirante_06_actual = df[df['t_stamp'].dt.day == ahora.day].iloc[0]['Nivel_1'] if not df[df['t_stamp'].dt.day == ahora.day].empty else None
-
-    radio = 23.4
 def calcular_volumen(tirante):
     radio = 23.4
     pi = 3.1416
@@ -84,10 +62,7 @@ def analizar_comportamiento_nuevo(df):
 
     volumen_rebombeado = volumen_06_actual - volumen_16 if volumen_06_actual else None
 
-    # Fijamos las horas de operación a 10 horas
     horas_operacion = 10
-
-    # Cálculo del gasto promedio en litros por segundo
     gasto_promedio = (volumen_rebombeado * 1000) / (horas_operacion * 3.6) if volumen_rebombeado else None
 
     return {
@@ -100,12 +75,8 @@ def analizar_comportamiento_nuevo(df):
         "volumen_inicio_06": round(volumen_06_actual, 4) if volumen_06_actual else None,
         "volumen_rebombeado": round(volumen_rebombeado, 4) if volumen_rebombeado else None,
         "horas_operacion": horas_operacion,
-        "gasto_promedio_lps": round(gasto_promedio, 2) if gasto_promedio else None,
-        # "volumen_total_24h": round(volumen_rebombeado, 4) if volumen_rebombeado else None
+        "gasto_promedio_lps": round(gasto_promedio, 2) if gasto_promedio else None
     }
-
-
-
 
 def extract_and_update_data():
     db_connection = None
@@ -114,7 +85,6 @@ def extract_and_update_data():
             logging.info("Conectando a la base de datos...")
             db_connection = create_engine('mysql+pymysql://admin:Password0@192.168.103.2/datos')
             logging.info("Conexión exitosa")
-
             start_time = (datetime.now() - timedelta(days=1)).replace(hour=5, minute=57, second=0, microsecond=0)
             query = f"""
             SELECT Nivel_1, t_stamp
@@ -122,7 +92,6 @@ def extract_and_update_data():
             WHERE t_stamp >= '{start_time.strftime('%Y-%m-%d %H:%M:%S')}'
             ORDER BY t_stamp ASC;
             """
-
             df = pd.read_sql(query, con=db_connection)
             if df.empty:
                 logging.warning("No hay datos para tanque_alcaldes")
