@@ -7,7 +7,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.1/socket.io.min.js"></script>
   <style>
     body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; padding: 20px; }
     .card {
@@ -43,15 +42,12 @@
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
-    
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
       aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav">
-      
-        
       </ul>
     </div>
   </div>
@@ -91,7 +87,6 @@ const NIVEL_MAX = 3.0;
 const CAPACIDAD = 5000;
 let nivelChart = null;
 Chart.register(ChartDataLabels);
-
 function findClosestIndex(dates, target) {
   if (!dates || dates.length === 0) return -1;
   let bestI = 0;
@@ -102,236 +97,217 @@ function findClosestIndex(dates, target) {
   }
   return bestI;
 }
-
 async function cargarDatos() {
-  // Leer CSV
-  const csvResp = await fetch('/static/dashboard_data.csv');
-  const csvText = await csvResp.text();
-  const results = Papa.parse(csvText, { header: true, dynamicTyping: true });
-  const rawData = results.data.filter(d => d && d.Nivel_1 !== undefined);
+  try {
+    // Cambiar las rutas para que apunten a los archivos en la carpeta docs
+    const csvResp = await fetch('/grafica_alcaldes/dashboard_data.csv');
+    if (!csvResp.ok) throw new Error(`HTTP error! status: ${csvResp.status}`);
+    const csvText = await csvResp.text();
+    const results = Papa.parse(csvText, { header: true, dynamicTyping: true });
+    const rawData = results.data.filter(d => d && d.Nivel_1 !== undefined);
+    // Ignorar ceros (falsos negativos)
+    const data = rawData.filter(d => d.Nivel_1 > 0);
 
-  // Ignorar ceros (falsos negativos)
-  const data = rawData.filter(d => d.Nivel_1 > 0);
+    // Leer reporte
+    const jsonResp = await fetch('/grafica_alcaldes/reporte_nuevo.json');
+    if (!jsonResp.ok) throw new Error(`HTTP error! status: ${jsonResp.status}`);
+    const reporte = await jsonResp.json();
 
-  // Leer reporte
-  const jsonResp = await fetch('/reporte_nuevo');
-  const reporte = await jsonResp.json();
+    // Mostrar métricas (usar fallback con guiones si null)
+    const show = (v) => (v === null || v === undefined) ? '--' : v;
+    document.getElementById('tirante16').textContent = show(reporte.tirante_termino_anterior_16);
+    document.getElementById('volumen16').textContent = show(reporte.volumen_termino_anterior_16);
+    document.getElementById('tirante06').textContent = show(reporte.tirante_inicio_06);
+    document.getElementById('volumen06').textContent = show(reporte.volumen_inicio_06);
+    document.getElementById('rebombeado').textContent = show(reporte.volumen_rebombeado);
+    document.getElementById('horas').textContent = show(reporte.horas_operacion);
+    document.getElementById('gasto').textContent = show(reporte.gasto_promedio_lps);
+    document.getElementById('volTotal').textContent = show(reporte.volumen_total_24h);
 
-  // Mostrar métricas (usar fallback con guiones si null)
-  const show = (v) => (v === null || v === undefined) ? '--' : v;
-  document.getElementById('tirante16').textContent = show(reporte.tirante_termino_anterior_16);
-  document.getElementById('volumen16').textContent = show(reporte.volumen_termino_anterior_16);
-  document.getElementById('tirante06').textContent = show(reporte.tirante_inicio_06);
-  document.getElementById('volumen06').textContent = show(reporte.volumen_inicio_06);
-  document.getElementById('rebombeado').textContent = show(reporte.volumen_rebombeado);
-  document.getElementById('horas').textContent = show(reporte.horas_operacion);
-  document.getElementById('gasto').textContent = show(reporte.gasto_promedio_lps);
-  document.getElementById('volTotal').textContent = show(reporte.volumen_total_24h);
-
-  if (data.length === 0) {
-    document.getElementById('descripcion').innerHTML = `<p>No hay datos válidos en el CSV para mostrar (06:00 a 06:00).</p>`;
-    if (nivelChart) { nivelChart.destroy(); nivelChart = null; }
-    return;
-  }
-
-  // Preparar etiquetas y arrays
-// Preparar etiquetas y arrays
-const fechasDate = data.map(d => new Date(d.t_stamp));
-
-// Filtrar datos para que comiencen desde las 05:57 del día anterior y terminen a las 07:00 del día actual
-const now = new Date();
-let today0600 = new Date(now);
-today0600.setHours(6, 0, 0, 0);
-
-if (now < today0600) {
-  today0600.setDate(today0600.getDate() - 1);
-}
-
-const startTime = new Date(today0600);
-startTime.setDate(startTime.getDate() - 1);
-startTime.setHours(5, 57, 0, 0); // Asegúrate de que comience a las 05:57 del día anterior
-
-const endTime = new Date(today0600);
-endTime.setHours(7, 0, 0, 0); // Ajusta para que termine a las 07:00 del día actual
-
-const filteredData = data.filter(d => {
-  const date = new Date(d.t_stamp);
-  return date >= startTime && date <= endTime;
-});
-
-// Formatear etiquetas para mostrar fecha y hora
-const etiquetas = filteredData.map(d => {
-  const date = new Date(d.t_stamp);
-  return date.toLocaleString('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  });
-});
-
-const niveles = filteredData.map(d => d.Nivel_1);
-
-// Fechas objetivo para marcadores:
-const targetPrev06 = new Date(startTime);
-const targetPrev16 = new Date(startTime);
-targetPrev16.setHours(16, 0, 0, 0);
-const targetCur06 = new Date(today0600); // Asegúrate de que targetCur06 sea las 06:00 del día actual
-
-// Encontrar índices más cercanos en el CSV para ubicar los puntos en el eje X
-const idxPrev06 = findClosestIndex(fechasDate, targetPrev06);
-const idxPrev16 = findClosestIndex(fechasDate, targetPrev16);
-const idxCur06 = findClosestIndex(fechasDate, targetCur06);
-
-
-  // Helper para obtener nivel y volumen con fallback
-  const nivelFallback = (reportField, idx) => {
-    const r = reporte[reportField];
-    if (r !== null && r !== undefined) return r;
-    if (idx >= 0 && filteredData[idx] && filteredData[idx].Nivel_1 !== undefined) return filteredData[idx].Nivel_1;
-    return null;
-  };
-
-  const volumenFallback = (reportFieldVol, nivelVal) => {
-    const v = reporte[reportFieldVol];
-    if (v !== null && v !== undefined) return v;
-    if (nivelVal !== null && nivelVal !== undefined) return Math.round((nivelVal / NIVEL_MAX) * CAPACIDAD);
-    return null;
-  };
-
-  // Construir marcadores (solo si existe índice válido)
-  const marcadores = [];
-  if (idxPrev06 >= 0) {
-    const nivelP06 = nivelFallback('tirante_inicio_anterior_06', idxPrev06);
-    const volP06 = volumenFallback('volumen_inicio_anterior_06', nivelP06);
-    marcadores.push({ idx: idxPrev06, x: etiquetas[idxPrev06], y: nivelP06, volumen: volP06, label: '06:00 Día Anterior', color: 'rgba(52,152,219,1)'});
-  }
-  if (idxPrev16 >= 0) {
-    const nivel16 = nivelFallback('tirante_termino_anterior_16', idxPrev16);
-    const vol16 = volumenFallback('volumen_termino_anterior_16', nivel16);
-    marcadores.push({ idx: idxPrev16, x: etiquetas[idxPrev16], y: nivel16, volumen: vol16, label: '16:00 Día Anterior', color: 'rgba(241,196,15,1)'});
-  }
-  if (idxCur06 >= 0) {
-    const nivelC06 = nivelFallback('tirante_inicio_06', idxCur06);
-    const volC06 = volumenFallback('volumen_inicio_06', nivelC06);
-    marcadores.push({ idx: idxCur06, x: etiquetas[idxCur06], y: nivelC06, volumen: volC06, label: '06:00 Inicio Jornada', color: 'rgba(231,76,60,1)'});
-  }
-
-  // Destruye gráfica anterior si existe
-  if (nivelChart) {
-    nivelChart.destroy();
-    nivelChart = null;
-  }
-
-  // Datasets scatter para marcadores (uno por marcador para datalabels y tooltip limpio)
-  const scatterDatasets = marcadores.map(m => ({
-    label: m.label,
-    type: 'scatter',
-    data: [{ x: m.x, y: m.y, volumen: m.volumen, label: m.label }],
-    backgroundColor: m.color,
-    borderColor: '#ffffff',
-    pointRadius: 6,
-    pointHoverRadius: 8,
-    datalabels: {
-      display: true,
-      align: 'top',
-      formatter: (val) => {
-        if (!val || val.y === null) return '';
-        return `${val.y} m\n${val.volumen !== null ? val.volumen + ' m³' : ''}`;
-      },
-      color: '#fff',
-      font: { weight: '600', size: 11 }
+    if (data.length === 0) {
+      document.getElementById('descripcion').innerHTML = `<p>No hay datos válidos en el CSV para mostrar (06:00 a 06:00).</p>`;
+      if (nivelChart) { nivelChart.destroy(); nivelChart = null; }
+      return;
     }
-  }));
 
-  // Datasets para líneas verticales punteadas
-  const verticalLineDatasets = [];
-  if (marcadores.length > 0) {
-    marcadores.forEach((m, index) => {
-      verticalLineDatasets.push({
-        label: `${m.label} (Vertical)`,
-        data: [{ x: m.x, y: 0 }, { x: m.x, y: NIVEL_MAX }],
-        borderColor: m.color,
-        borderDash: [6, 4],
-        borderWidth: 1,
-        pointRadius: 0,
-        fill: false,
-        showLine: true
+    // Preparar etiquetas y arrays
+    const fechasDate = data.map(d => new Date(d.t_stamp));
+    // Filtrar datos para que comiencen desde las 05:57 del día anterior y terminen a las 07:00 del día actual
+    const now = new Date();
+    let today0600 = new Date(now);
+    today0600.setHours(6, 0, 0, 0);
+    if (now < today0600) {
+      today0600.setDate(today0600.getDate() - 1);
+    }
+    const startTime = new Date(today0600);
+    startTime.setDate(startTime.getDate() - 1);
+    startTime.setHours(5, 57, 0, 0); // Asegúrate de que comience a las 05:57 del día anterior
+    const endTime = new Date(today0600);
+    endTime.setHours(7, 0, 0, 0); // Ajusta para que termine a las 07:00 del día actual
+    const filteredData = data.filter(d => {
+      const date = new Date(d.t_stamp);
+      return date >= startTime && date <= endTime;
+    });
+    // Formatear etiquetas para mostrar fecha y hora
+    const etiquetas = filteredData.map(d => {
+      const date = new Date(d.t_stamp);
+      return date.toLocaleString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
       });
     });
-  }
-
-  // Crear gráfica
-  const ctx = document.getElementById('nivelChart').getContext('2d');
-  nivelChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: etiquetas,
-      datasets: [
-        {
-          label: 'Nivel (m)',
-          data: niveles,
-          borderColor: 'rgba(52,152,219,1)',
-          backgroundColor: 'rgba(52,152,219,0.12)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.25,
-          pointRadius: 0
+    const niveles = filteredData.map(d => d.Nivel_1);
+    // Fechas objetivo para marcadores:
+    const targetPrev06 = new Date(startTime);
+    const targetPrev16 = new Date(startTime);
+    targetPrev16.setHours(16, 0, 0, 0);
+    const targetCur06 = new Date(today0600); // Asegúrate de que targetCur06 sea las 06:00 del día actual
+    // Encontrar índices más cercanos en el CSV para ubicar los puntos en el eje X
+    const idxPrev06 = findClosestIndex(fechasDate, targetPrev06);
+    const idxPrev16 = findClosestIndex(fechasDate, targetPrev16);
+    const idxCur06 = findClosestIndex(fechasDate, targetCur06);
+    // Helper para obtener nivel y volumen con fallback
+    const nivelFallback = (reportField, idx) => {
+      const r = reporte[reportField];
+      if (r !== null && r !== undefined) return r;
+      if (idx >= 0 && filteredData[idx] && filteredData[idx].Nivel_1 !== undefined) return filteredData[idx].Nivel_1;
+      return null;
+    };
+    const volumenFallback = (reportFieldVol, nivelVal) => {
+      const v = reporte[reportFieldVol];
+      if (v !== null && v !== undefined) return v;
+      if (nivelVal !== null && nivelVal !== undefined) return Math.round((nivelVal / NIVEL_MAX) * CAPACIDAD);
+      return null;
+    };
+    // Construir marcadores (solo si existe índice válido)
+    const marcadores = [];
+    if (idxPrev06 >= 0) {
+      const nivelP06 = nivelFallback('tirante_inicio_anterior_06', idxPrev06);
+      const volP06 = volumenFallback('volumen_inicio_anterior_06', nivelP06);
+      marcadores.push({ idx: idxPrev06, x: etiquetas[idxPrev06], y: nivelP06, volumen: volP06, label: '06:00 Día Anterior', color: 'rgba(52,152,219,1)'});
+    }
+    if (idxPrev16 >= 0) {
+      const nivel16 = nivelFallback('tirante_termino_anterior_16', idxPrev16);
+      const vol16 = volumenFallback('volumen_termino_anterior_16', nivel16);
+      marcadores.push({ idx: idxPrev16, x: etiquetas[idxPrev16], y: nivel16, volumen: vol16, label: '16:00 Día Anterior', color: 'rgba(241,196,15,1)'});
+    }
+    if (idxCur06 >= 0) {
+      const nivelC06 = nivelFallback('tirante_inicio_06', idxCur06);
+      const volC06 = volumenFallback('volumen_inicio_06', nivelC06);
+      marcadores.push({ idx: idxCur06, x: etiquetas[idxCur06], y: nivelC06, volumen: volC06, label: '06:00 Inicio Jornada', color: 'rgba(231,76,60,1)'});
+    }
+    // Destruye gráfica anterior si existe
+    if (nivelChart) {
+      nivelChart.destroy();
+      nivelChart = null;
+    }
+    // Datasets scatter para marcadores (uno por marcador para datalabels y tooltip limpio)
+    const scatterDatasets = marcadores.map(m => ({
+      label: m.label,
+      type: 'scatter',
+      data: [{ x: m.x, y: m.y, volumen: m.volumen, label: m.label }],
+      backgroundColor: m.color,
+      borderColor: '#ffffff',
+      pointRadius: 6,
+      pointHoverRadius: 8,
+      datalabels: {
+        display: true,
+        align: 'top',
+        formatter: (val) => {
+          if (!val || val.y === null) return '';
+          return `${val.y} m\n${val.volumen !== null ? val.volumen + ' m³' : ''}`;
         },
-        ...scatterDatasets,
-        ...verticalLineDatasets
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'nearest', intersect: false },
-      plugins: {
-        tooltip: {
-          enabled: true,
-          position: 'average',
-          mode: 'nearest',
-          intersect: false,
-          callbacks: {
-            label: function(context) {
-              if (context.dataset.type === 'scatter') {
-                const raw = context.raw;
-                if (raw && raw.y !== null) {
-                  return [`${raw.label || context.dataset.label}`, `Nivel: ${raw.y} m`, raw.volumen !== null ? `Volumen: ${raw.volumen} m³` : 'Volumen: --'];
+        color: '#fff',
+        font: { weight: '600', size: 11 }
+      }
+    }));
+    // Datasets para líneas verticales punteadas
+    const verticalLineDatasets = [];
+    if (marcadores.length > 0) {
+      marcadores.forEach((m, index) => {
+        verticalLineDatasets.push({
+          label: `${m.label} (Vertical)`,
+          data: [{ x: m.x, y: 0 }, { x: m.x, y: NIVEL_MAX }],
+          borderColor: m.color,
+          borderDash: [6, 4],
+          borderWidth: 1,
+          pointRadius: 0,
+          fill: false,
+          showLine: true
+        });
+      });
+    }
+    // Crear gráfica
+    const ctx = document.getElementById('nivelChart').getContext('2d');
+    nivelChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: etiquetas,
+        datasets: [
+          {
+            label: 'Nivel (m)',
+            data: niveles,
+            borderColor: 'rgba(52,152,219,1)',
+            backgroundColor: 'rgba(52,152,219,0.12)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.25,
+            pointRadius: 0
+          },
+          ...scatterDatasets,
+          ...verticalLineDatasets
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'nearest', intersect: false },
+        plugins: {
+          tooltip: {
+            enabled: true,
+            position: 'average',
+            mode: 'nearest',
+            intersect: false,
+            callbacks: {
+              label: function(context) {
+                if (context.dataset.type === 'scatter') {
+                  const raw = context.raw;
+                  if (raw && raw.y !== null) {
+                    return [`${raw.label || context.dataset.label}`, `Nivel: ${raw.y} m`, raw.volumen !== null ? `Volumen: ${raw.volumen} m³` : 'Volumen: --'];
+                  }
+                  return context.dataset.label;
+                } else {
+                  return `Nivel: ${context.parsed.y} m`;
                 }
-                return context.dataset.label;
-              } else {
-                return `Nivel: ${context.parsed.y} m`;
               }
             }
-          }
+          },
+          legend: { labels: { color: '#ffffff' } },
+          title: { display: true, text: 'Nivel del Tanque 06:00 a 06:00', color: '#ffffff', font: { size: 16 } },
+          datalabels: { display: false }
         },
-        legend: { labels: { color: '#ffffff' } },
-        title: { display: true, text: 'Nivel del Tanque 06:00 a 06:00', color: '#ffffff', font: { size: 16 } },
-        datalabels: { display: false }
+        scales: {
+          x: { ticks: { color: '#bdc3c7' }, title: { display: true, text: 'Hora', color: '#ffffff' } },
+          y: { ticks: { color: '#bdc3c7' }, title: { display: true, text: 'Nivel (m)', color: '#ffffff' }, beginAtZero: false }
+        }
       },
-      scales: {
-        x: { ticks: { color: '#bdc3c7' }, title: { display: true, text: 'Hora', color: '#ffffff' } },
-        y: { ticks: { color: '#bdc3c7' }, title: { display: true, text: 'Nivel (m)', color: '#ffffff' }, beginAtZero: false }
-      }
-    },
-    plugins: [ChartDataLabels]
-  });
-
-  // Descripción dinámica (texto resumen)
-  document.getElementById('descripcion').innerHTML = `
-    <p>Tirante al término de la jornada día anterior (16:00 hrs): <strong>${show(reporte.tirante_termino_anterior_16)} m</strong> — Volumen: <strong>${show(reporte.volumen_termino_anterior_16)} m³</strong>.</p>
-    <p>Volumen acumulado (16:00 a 06:00): <strong>${show(reporte.volumen_rebombeado)} m³</strong>.</p>
-    <p>Tirante al comienzo de la jornada (06:00 hrs): <strong>${show(reporte.tirante_inicio_06)} m</strong> — Volumen: <strong>${show(reporte.volumen_inicio_06)} m³</strong>.</p>
-  `;
+      plugins: [ChartDataLabels]
+    });
+    // Descripción dinámica (texto resumen)
+    document.getElementById('descripcion').innerHTML = `
+      <p>Tirante al término de la jornada día anterior (16:00 hrs): <strong>${show(reporte.tirante_termino_anterior_16)} m</strong> — Volumen: <strong>${show(reporte.volumen_termino_anterior_16)} m³</strong>.</p>
+      <p>Volumen acumulado (16:00 a 06:00): <strong>${show(reporte.volumen_rebombeado)} m³</strong>.</p>
+      <p>Tirante al comienzo de la jornada (06:00 hrs): <strong>${show(reporte.tirante_inicio_06)} m</strong> — Volumen: <strong>${show(reporte.volumen_inicio_06)} m³</strong>.</p>
+    `;
+  } catch (error) {
+    console.error("Error al cargar los datos:", error);
+    document.getElementById('descripcion').innerHTML = `<p>Error al cargar los datos: ${error.message}</p>`;
+  }
 }
-
-// SocketIO para actualización en tiempo real
-const socket = io();
-socket.on('update_data', () => { cargarDatos(); });
-
 // Cargar al abrir
 cargarDatos();
 </script>
