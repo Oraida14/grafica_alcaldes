@@ -1,12 +1,12 @@
 {
-    "tirante_termino_anterior_16": 1.39,
-    "volumen_termino_anterior_16": 2391.683,
-    "volumen_acumulado_16_06": 643.9795,
-    "tirante_inicio_anterior_06": 2.69,
-    "volumen_inicio_anterior_06": 4630.5594,
-    "tirante_inicio_06": 1.76,
-    "volumen_inicio_06": 3035.6625,
-    "volumen_rebombeado": 643.9795,
+    "tirante_termino_anterior_16": 1.9,
+    "volumen_termino_anterior_16": 3276.2861,
+    "volumen_acumulado_16_06": 563.3014,
+    "tirante_inicio_anterior_06": 2.64,
+    "volumen_inicio_anterior_06": 4537.0657,
+    "tirante_inicio_06": 2.23,
+    "volumen_inicio_06": 3839.5876,
+    "volumen_rebombeado": 563.3014,
     "horas_operacion": 10,
-    "gasto_promedio_lps": 17888.32
+    "gasto_promedio_lps": 15647.26
 }
