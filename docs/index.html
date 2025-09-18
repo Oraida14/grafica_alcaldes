@@ -193,10 +193,11 @@ async function cargarDatos() {
       marcadores.push({ idx: idxPrev16, x: etiquetas[idxPrev16], y: nivel16, volumen: vol16, label: '16:00 Día Anterior', color: 'rgba(241,196,15,1)'});
     }
     if (idxCur06 >= 0) {
-      const nivelC06 = reporte.tirante_inicio_06; // Usar directamente el valor del reporte
-      const volC06 = volumenFallback('volumen_inicio_06', nivelC06);
-      marcadores.push({ idx: idxCur06, x: etiquetas[idxCur06], y: nivelC06, volumen: volC06, label: '06:00 Inicio Jornada', color: 'rgba(231,76,60,1)'});
-    }
+  const nivelC06 = data[idxCur06].Nivel_1;  // tomar el valor real del CSV
+  const volC06 = volumenFallback('volumen_inicio_06', nivelC06);
+  marcadores.push({ idx: idxCur06, x: etiquetas[idxCur06], y: nivelC06, volumen: volC06, label: '06:00 Inicio Jornada', color: 'rgba(231,76,60,1)'});
+}
+
 
     if (nivelChart) {
       nivelChart.destroy();

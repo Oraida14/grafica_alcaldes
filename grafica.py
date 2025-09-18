@@ -48,8 +48,9 @@ def analizar_comportamiento_nuevo(df):
     df = df[df['Nivel_1'] > 0]
     ahora = datetime.now()
     inicio = (ahora - timedelta(days=1)).replace(hour=5, minute=57, second=0, microsecond=0)
-    fin = ahora.replace(hour=5, minute=57, second=0, microsecond=0)
+    fin = ahora.replace(hour=6, minute=3, second=0, microsecond=0)  # incluir hasta después de las 06:00
     df = df[(df['t_stamp'] >= inicio) & (df['t_stamp'] <= fin)].sort_values('t_stamp')
+
     if df.empty:
         return {}
 
