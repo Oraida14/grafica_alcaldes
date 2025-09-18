@@ -87,6 +87,7 @@ const NIVEL_MAX = 3.0;
 const CAPACIDAD = 5000;
 let nivelChart = null;
 Chart.register(ChartDataLabels);
+
 function findClosestIndex(dates, target) {
   if (!dates || dates.length === 0) return -1;
   let bestI = 0;
@@ -97,23 +98,20 @@ function findClosestIndex(dates, target) {
   }
   return bestI;
 }
+
 async function cargarDatos() {
   try {
-    // Cambiar las rutas para que apunten a los archivos en la carpeta docs
     const csvResp = await fetch('/grafica_alcaldes/dashboard_data.csv');
     if (!csvResp.ok) throw new Error(`HTTP error! status: ${csvResp.status}`);
     const csvText = await csvResp.text();
     const results = Papa.parse(csvText, { header: true, dynamicTyping: true });
     const rawData = results.data.filter(d => d && d.Nivel_1 !== undefined);
-    // Ignorar ceros (falsos negativos)
     const data = rawData.filter(d => d.Nivel_1 > 0);
 
-    // Leer reporte
     const jsonResp = await fetch('/grafica_alcaldes/reporte_nuevo.json');
     if (!jsonResp.ok) throw new Error(`HTTP error! status: ${jsonResp.status}`);
     const reporte = await jsonResp.json();
 
-    // Mostrar métricas (usar fallback con guiones si null)
     const show = (v) => (v === null || v === undefined) ? '--' : v;
     document.getElementById('tirante16').textContent = show(reporte.tirante_termino_anterior_16);
     document.getElementById('volumen16').textContent = show(reporte.volumen_termino_anterior_16);
@@ -130,9 +128,7 @@ async function cargarDatos() {
       return;
     }
 
-    // Preparar etiquetas y arrays
     const fechasDate = data.map(d => new Date(d.t_stamp));
-    // Filtrar datos para que comiencen desde las 05:57 del día anterior y terminen a las 07:00 del día actual
     const now = new Date();
     let today0600 = new Date(now);
     today0600.setHours(6, 0, 0, 0);
@@ -141,14 +137,14 @@ async function cargarDatos() {
     }
     const startTime = new Date(today0600);
     startTime.setDate(startTime.getDate() - 1);
-    startTime.setHours(5, 57, 0, 0); // Asegúrate de que comience a las 05:57 del día anterior
+    startTime.setHours(5, 57, 0, 0);
     const endTime = new Date(today0600);
-    endTime.setHours(7, 0, 0, 0); // Ajusta para que termine a las 07:00 del día actual
+    endTime.setHours(7, 0, 0, 0);
     const filteredData = data.filter(d => {
       const date = new Date(d.t_stamp);
       return date >= startTime && date <= endTime;
     });
-    // Formatear etiquetas para mostrar fecha y hora
+
     const etiquetas = filteredData.map(d => {
       const date = new Date(d.t_stamp);
       return date.toLocaleString('es-ES', {
@@ -161,29 +157,30 @@ async function cargarDatos() {
       });
     });
     const niveles = filteredData.map(d => d.Nivel_1);
-    // Fechas objetivo para marcadores:
+
     const targetPrev06 = new Date(startTime);
     const targetPrev16 = new Date(startTime);
     targetPrev16.setHours(16, 0, 0, 0);
-    const targetCur06 = new Date(today0600); // Asegúrate de que targetCur06 sea las 06:00 del día actual
-    // Encontrar índices más cercanos en el CSV para ubicar los puntos en el eje X
+    const targetCur06 = new Date(today0600);
+
     const idxPrev06 = findClosestIndex(fechasDate, targetPrev06);
     const idxPrev16 = findClosestIndex(fechasDate, targetPrev16);
     const idxCur06 = findClosestIndex(fechasDate, targetCur06);
-    // Helper para obtener nivel y volumen con fallback
+
     const nivelFallback = (reportField, idx) => {
       const r = reporte[reportField];
       if (r !== null && r !== undefined) return r;
       if (idx >= 0 && filteredData[idx] && filteredData[idx].Nivel_1 !== undefined) return filteredData[idx].Nivel_1;
       return null;
     };
+
     const volumenFallback = (reportFieldVol, nivelVal) => {
       const v = reporte[reportFieldVol];
       if (v !== null && v !== undefined) return v;
       if (nivelVal !== null && nivelVal !== undefined) return Math.round((nivelVal / NIVEL_MAX) * CAPACIDAD);
       return null;
     };
-    // Construir marcadores (solo si existe índice válido)
+
     const marcadores = [];
     if (idxPrev06 >= 0) {
       const nivelP06 = nivelFallback('tirante_inicio_anterior_06', idxPrev06);
@@ -196,16 +193,16 @@ async function cargarDatos() {
       marcadores.push({ idx: idxPrev16, x: etiquetas[idxPrev16], y: nivel16, volumen: vol16, label: '16:00 Día Anterior', color: 'rgba(241,196,15,1)'});
     }
     if (idxCur06 >= 0) {
-      const nivelC06 = nivelFallback('tirante_inicio_06', idxCur06);
+      const nivelC06 = reporte.tirante_inicio_06; // Usar directamente el valor del reporte
       const volC06 = volumenFallback('volumen_inicio_06', nivelC06);
       marcadores.push({ idx: idxCur06, x: etiquetas[idxCur06], y: nivelC06, volumen: volC06, label: '06:00 Inicio Jornada', color: 'rgba(231,76,60,1)'});
     }
-    // Destruye gráfica anterior si existe
+
     if (nivelChart) {
       nivelChart.destroy();
       nivelChart = null;
     }
-    // Datasets scatter para marcadores (uno por marcador para datalabels y tooltip limpio)
+
     const scatterDatasets = marcadores.map(m => ({
       label: m.label,
       type: 'scatter',
@@ -225,7 +222,7 @@ async function cargarDatos() {
         font: { weight: '600', size: 11 }
       }
     }));
-    // Datasets para líneas verticales punteadas
+
     const verticalLineDatasets = [];
     if (marcadores.length > 0) {
       marcadores.forEach((m, index) => {
@@ -241,7 +238,7 @@ async function cargarDatos() {
         });
       });
     }
-    // Crear gráfica
+
     const ctx = document.getElementById('nivelChart').getContext('2d');
     nivelChart = new Chart(ctx, {
       type: 'line',
@@ -297,7 +294,7 @@ async function cargarDatos() {
       },
       plugins: [ChartDataLabels]
     });
-    // Descripción dinámica (texto resumen)
+
     document.getElementById('descripcion').innerHTML = `
       <p>Tirante al término de la jornada día anterior (16:00 hrs): <strong>${show(reporte.tirante_termino_anterior_16)} m</strong> — Volumen: <strong>${show(reporte.volumen_termino_anterior_16)} m³</strong>.</p>
       <p>Volumen acumulado (16:00 a 06:00): <strong>${show(reporte.volumen_rebombeado)} m³</strong>.</p>
@@ -308,7 +305,7 @@ async function cargarDatos() {
     document.getElementById('descripcion').innerHTML = `<p>Error al cargar los datos: ${error.message}</p>`;
   }
 }
-// Cargar al abrir
+
 cargarDatos();
 </script>
 </body>

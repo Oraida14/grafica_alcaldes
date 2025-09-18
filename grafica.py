@@ -53,18 +53,21 @@ def analizar_comportamiento_nuevo(df):
     if df.empty:
         return {}
 
+    # Obtener el primer valor válido del día actual
+    df_hoy = df[df['t_stamp'].dt.day == ahora.day]
+    tirante_06_actual = df_hoy.iloc[0]['Nivel_1'] if not df_hoy.empty else None
+
+    # Obtener el valor más cercano a las 16:00 y 06:00 del día anterior
     def valor_mas_cercano(hora_objetivo):
         df['diff_horas'] = abs(df['t_stamp'].dt.hour + df['t_stamp'].dt.minute/60 - hora_objetivo)
         return df.loc[df['diff_horas'].idxmin(), 'Nivel_1']
 
     tirante_16 = valor_mas_cercano(16)
     tirante_06_anterior = valor_mas_cercano(6)
-    tirante_06_actual = df[df['t_stamp'].dt.day == ahora.day].iloc[0]['Nivel_1'] if not df[df['t_stamp'].dt.day == ahora.day].empty else None
 
     volumen_16 = calcular_volumen(tirante_16)
     volumen_06_anterior = calcular_volumen(tirante_06_anterior)
     volumen_06_actual = calcular_volumen(tirante_06_actual) if tirante_06_actual else None
-
     volumen_rebombeado = volumen_06_actual - volumen_16 if volumen_06_actual else None
     horas_operacion = 10
     gasto_promedio = (volumen_rebombeado * 1000) / (horas_operacion * 3.6) if volumen_rebombeado else None
@@ -79,7 +82,8 @@ def analizar_comportamiento_nuevo(df):
         "volumen_inicio_06": round(volumen_06_actual, 4) if volumen_06_actual else None,
         "volumen_rebombeado": round(volumen_rebombeado, 4) if volumen_rebombeado else None,
         "horas_operacion": horas_operacion,
-        "gasto_promedio_lps": round(gasto_promedio, 2) if gasto_promedio else None
+        "gasto_promedio_lps": round(gasto_promedio, 2) if gasto_promedio else None,
+        "volumen_total_24h": round(volumen_06_actual, 4) if volumen_06_actual else None
     }
 
 def extract_and_update_data():
@@ -105,23 +109,16 @@ def extract_and_update_data():
                 df['fecha_hora'] = df['t_stamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
                 df.to_csv(CSV_PATH, index=False, encoding='utf-8-sig')
                 logging.info(f"CSV guardado en {CSV_PATH}")
-
-                # Copiar el archivo CSV a la carpeta docs
                 shutil.copy(CSV_PATH, DOCS_CSV_PATH)
                 logging.info(f"CSV copiado a {DOCS_CSV_PATH}")
-
                 reporte = analizar_comportamiento_nuevo(df)
                 with open(REPORTE_PATH, 'w', encoding='utf-8') as f:
                     json.dump(reporte, f, indent=4, ensure_ascii=False)
                 logging.info(f"Reporte actualizado en {REPORTE_PATH}")
-
-                # Copiar el archivo de reporte a la carpeta docs
                 shutil.copy(REPORTE_PATH, DOCS_REPORTE_PATH)
                 logging.info(f"Reporte copiado a {DOCS_REPORTE_PATH}")
-
                 push_to_github(REPO_PATH, DOCS_CSV_PATH)
                 push_to_github(REPO_PATH, DOCS_REPORTE_PATH)
-
                 socketio.emit('update_data', {
                     "ultimos_datos": df.tail(1).to_dict(orient='records'),
                     "reporte": reporte
@@ -137,18 +134,6 @@ def extract_and_update_data():
 @app.route('/')
 def index():
     return render_template('index.html')
-
-@app.route('/seguridad')
-def seguridad():
-    return render_template('seguridad.html')
-
-@app.route('/reporte')
-def reporte():
-    return render_template('reporte.html')
-
-@app.route('/detalle-alertas')
-def detalle_alertas():
-    return render_template('detalle_alertas.html')
 
 @app.route('/reporte_nuevo')
 def reporte_nuevo():
